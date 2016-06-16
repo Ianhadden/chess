@@ -27,16 +27,12 @@
 <script>
 //confirm("work dammit");
 
-setUp();
+document.getElementById("info1").innerHTML="derp";
+var boardy = new Board();
+printBoard(boardy);
 
-function setUp(){
-	document.getElementById("info1").innerHTML="derp";
-	var board = new Board();
-	printBoard(board);
-}
 
 function getMoveInput(){
-	setUp();
 	var moveForm = document.getElementById("moveInput");
 	var moveText = moveForm.elements["name"].value;
 	if (moveText.length !== 5|| moveText.substring(2, 3) !== " "){
@@ -45,8 +41,42 @@ function getMoveInput(){
 		document.getElementById("info1").innerHTML="Your move was " + moveText;
 		var startPosition = getCoordsFromInput(moveText.substring(0,2));
 		var endPosition = getCoordsFromInput(moveText.substring(3, 5));
-		document.getElementById("info1").innerHTML="start position: " + startPosition.x + startPosition.y;
+		if (startPosition.x === -1 || startPosition.y === -1
+			|| endPosition.x === -1 || endPosition.y === -1){
+			document.getElementById("info1").innerHTML="Invalid position(s)";
+		} else {
+			var valid = checkMoveValidity(startPosition, endPosition);
+			if (valid){
+				applyMove(startPosition, endPosition);
+			} else {
+				document.getElementById("info1").innerHTML="Invalid Move";
+			}
+		}
+		//document.getElementById("info1").innerHTML="start position: " + startPosition.x + startPosition.y;
 	}
+}
+
+function checkMoveValidity(startPosition, endPosition){ //obviously incomplete
+	var piece = boardy.grid[startPosition.y][startPosition.x];
+	var target = boardy.grid[endPosition.y][endPosition.x];
+	if (piece.owner !== boardy.turn){
+		return false;
+	}
+	return true;
+}
+
+function applyMove(startPosition, endPosition){
+	boardy.grid[endPosition.y][endPosition.x] = boardy.grid[startPosition.y][startPosition.x];
+	boardy.grid[startPosition.y][startPosition.x] = 
+		new Empty("empty", boardy, new Position(startPosition.y, startPosition.x));
+	if (boardy.turn === "white"){
+		boardy.turn = "black";
+		document.getElementById("info2").innerHTML="Uppercase's move";
+	} else {
+		boardy.turn = "white";
+		document.getElementById("info2").innerHTML="Lowercase's move";
+	}
+	printBoard(boardy);
 }
 
 function getCoordsFromInput(stringInput){
@@ -56,40 +86,56 @@ function getCoordsFromInput(stringInput){
 	switch (stringX) {
 		case "a":
 			numX = 1;
+			break;
 		case "b":
 			numX = 2;
+			break;
 		case "c":
 			numX = 3;
+			break;
 		case "d":
 			numX = 4;
+			break;
 		case "e":
 			numX = 5;
+			break;
 		case "f":
 			numX = 6;
+			break;
 		case "g":
 			numX = 7;
+			break;
 		case "h":
 			numX = 8;
+			break;
 		default:
 			numX = -1;
 	}
 	switch (stringY) {
 		case "1":
 			numY = 1;
+			break;
 		case "2":
 			numY = 2;
+			break;
 		case "3":
 			numY = 3;
+			break;
 		case "4":
 			numY = 4;
+			break;
 		case "5":
 			numY = 5;
+			break;
 		case "6":
 			numY = 6;
+			break;
 		case "7":
 			numY = 7;
+			break;
 		case "8":
 			numY = 8;
+			break;
 		default:
 			numY = -1;
 	}
