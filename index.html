@@ -1,9 +1,290 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<script type="text/javascript" src="chess.js"></script>
+	<link rel="stylesheet" type="text/css" href="main.css">
 </head>
 <body>
-	<h1>chess</h1>
+	
+	<form id="moveInput">
+	Move: <input name="name" type="text" size="20">
+	</form>
+	<button onclick="getMoveInput()">Submit</button>
+	
+	<p id="info1"><br></p>
+	<p id="info2">Lowercase's move</p>
+	<p id="8"></p>
+	<p id="7"></p>
+	<p id="6"></p>
+	<p id="5"></p>
+	<p id="4"></p>
+	<p id="3"></p>
+	<p id="2"></p>
+	<p id="1"></p>
+	<p id="b"></p>
+	
+	<p id="b2"></p>
+	
+<script>
+//confirm("work dammit");
+
+setUp();
+
+function setUp(){
+	document.getElementById("info1").innerHTML="derp";
+	var board = new Board();
+	printBoard(board);
+}
+
+function getMoveInput(){
+	setUp();
+	var moveForm = document.getElementById("moveInput");
+	var moveText = moveForm.elements["name"].value;
+	if (moveText.length !== 5|| moveText.substring(2, 3) !== " "){
+		document.getElementById("info1").innerHTML="Invalid command";
+	} else {
+		document.getElementById("info1").innerHTML="Your move was " + moveText;
+		var startPosition = getCoordsFromInput(moveText.substring(0,2));
+		var endPosition = getCoordsFromInput(moveText.substring(3, 5));
+		document.getElementById("info1").innerHTML="start position: " + startPosition.x + startPosition.y;
+	}
+}
+
+function getCoordsFromInput(stringInput){
+	var stringX = stringInput.substring(0, 1);
+	var stringY = stringInput.substring(1, 2);
+	var numX, numY;
+	switch (stringX) {
+		case "a":
+			numX = 1;
+		case "b":
+			numX = 2;
+		case "c":
+			numX = 3;
+		case "d":
+			numX = 4;
+		case "e":
+			numX = 5;
+		case "f":
+			numX = 6;
+		case "g":
+			numX = 7;
+		case "h":
+			numX = 8;
+		default:
+			numX = -1;
+	}
+	switch (stringY) {
+		case "1":
+			numY = 1;
+		case "2":
+			numY = 2;
+		case "3":
+			numY = 3;
+		case "4":
+			numY = 4;
+		case "5":
+			numY = 5;
+		case "6":
+			numY = 6;
+		case "7":
+			numY = 7;
+		case "8":
+			numY = 8;
+		default:
+			numY = -1;
+	}
+	var position = new Position(numY, numX);
+	return position;
+}
+
+function printBoard(board){
+	document.getElementById("8").innerHTML = getBoardRow(board, 8);
+	document.getElementById("7").innerHTML = getBoardRow(board, 7);
+	document.getElementById("6").innerHTML = getBoardRow(board, 6);
+	document.getElementById("5").innerHTML = getBoardRow(board, 5);
+	document.getElementById("4").innerHTML = getBoardRow(board, 4);
+	document.getElementById("3").innerHTML = getBoardRow(board, 3);
+	document.getElementById("2").innerHTML = getBoardRow(board, 2);
+	document.getElementById("1").innerHTML = getBoardRow(board, 1);
+	document.getElementById("b").innerHTML = "<b>" + board.grid[0] + "</b>";
+}
+
+function getBoardRow(board, row){
+	var ret = "<b>" + row + "</b>";
+	for (var i = 1; i < 9; i++){
+		ret += " ";
+		ret += getDisplay(board.grid[row][i]);
+	}
+	return ret;
+}
+
+function Board(){
+	this.grid = new Array();
+	this.grid[0] = "0 a b c d e f g h";
+	this.grid[1] = new Array();
+	this.grid[1][0] = 1;
+	fillRowWithPieces("white", 1, this);
+	this.grid[2] = new Array();
+	this.grid[2][0] = 2;
+	fillRowWithPawns("white", 2, this);
+	this.grid[3] = new Array();
+	this.grid[3][0] = 3;
+	fillRowWithEmpty(3, this);
+	this.grid[4] = new Array();
+	this.grid[4][0] = 4;
+	fillRowWithEmpty(4, this);
+	this.grid[5] = new Array();
+	this.grid[5][0] = 5;
+	fillRowWithEmpty(5, this);
+	this.grid[6] = new Array();
+	this.grid[6][0] = 3;
+	fillRowWithEmpty(6, this);
+	this.grid[7] = new Array();
+	this.grid[7][0] = 7;
+	fillRowWithPawns("black", 7, this);
+	this.grid[8] = new Array();
+	this.grid[8][0] = 8;
+	fillRowWithPieces("black", 8, this);
+	this.turn = "white";
+}
+
+function fillRowWithPawns(owner, row, board){
+	for (var i = 1; i < 9; i++){
+		board.grid[row][i] = new Pawn(owner, this, new Position(row, i));
+	}
+}
+
+function fillRowWithEmpty(row, board){
+	for (var i = 1; i < 9; i++){
+		board.grid[row][i] = new Empty("empty", this, new Position(row, i));
+	}
+}
+
+function fillRowWithPieces(owner, row, board){
+	board.grid[row][1] = new Rook(owner, this, new Position(row, 1));
+	board.grid[row][2] = new Horse(owner, this, new Position(row, 2));
+	board.grid[row][3] = new Bishop(owner, this, new Position(row, 3));
+	board.grid[row][4] = new Queen(owner, this, new Position(row, 4));
+	board.grid[row][5] = new King(owner, this, new Position(row, 5));
+	board.grid[row][6] = new Bishop(owner, this, new Position(row, 6));
+	board.grid[row][7] = new Horse(owner, this, new Position(row, 7));
+	board.grid[row][8] = new Rook(owner, this, new Position(row, 8));
+}
+
+function getDisplay(piece){
+	var ret;
+	if (piece instanceof Empty){ //piece.owner
+		ret = "-";
+	} else if (piece instanceof Rook){
+		ret = "r";
+	} else if (piece instanceof Horse){
+		ret = "h";
+	} else if (piece instanceof Bishop){
+		ret = "b";
+	} else if (piece instanceof Queen){
+		ret = "q";
+	} else if (piece instanceof King){
+		ret = "k";
+	} else if (piece instanceof Pawn){
+		ret = "p";
+	} else {
+		ret = "v";
+	}
+	if (piece.owner === "black"){
+		ret = ret.toUpperCase();
+	}
+	return ret;
+}
+
+function Position(y, x){
+	this.x = x;
+	this.y = y;
+}
+
+function Piece(owner, board, position){
+	this.board = board;
+	this.owner = owner;
+	this.position = position;
+	this.getMoves = function(){};
+}
+
+function Rook(owner, board, position){
+	this.board = board;
+	this.owner = owner;
+	this.position = position;
+	this.getMoves = function(){};
+}
+
+function Horse(owner, board, position){
+	this.board = board;
+	this.owner = owner;
+	this.position = position;
+	this.getMoves = function(){};
+}
+
+function Bishop(owner, board, position){
+	this.board = board;
+	this.owner = owner;
+	this.position = position;
+	this.getMoves = function(){};
+}
+
+function Queen(owner, board, position){
+	this.board = board;
+	this.owner = owner;
+	this.position = position;
+	this.getMoves = function(){};
+}
+
+function King(owner, board, position){
+	this.board = board;
+	this.owner = owner;
+	this.position = position;
+	this.getMoves = function(){};
+}
+
+function Pawn(owner, board, position){
+	this.board = board;
+	this.owner = owner;
+	this.position = position;
+	this.getMoves = function(){};
+}
+
+function Empty(owner, board, position){
+	this.board = board;
+	this.owner = owner;
+	this.position = position;
+	this.getMoves = function(){};
+}
+
+</script>
+
+<!--
+	<p id="8">8   R H B Q K B H R</p>
+	<p id="7">7   P P P P P P P P</p>
+	<p id="6">6   - - - - - - - -</p>
+	<p id="5">5   - - - - - - - -</p>
+	<p id="4">4   - - - - - - - -</p>
+	<p id="3">3   - - - - - - - -</p>
+	<p id="2">2   p p p p p p p p</p>
+	<p id="1">1   r h b q k b h r</p>
+	<p id="b">0   a b c d e f g h</p>
+	
+		if (piece.owner === "empty"){
+		ret = "-";
+	} else if (piece instanceof Rook){
+		ret = "r";
+	} else if (piece instanceof Horse){
+		ret = "h";
+	} else if (piece instanceof Bishop){
+		ret = "b";
+	} else if (piece instanceof Queen){
+		ret = "q";
+	} else if (piece instanceof King){
+		ret = "k";
+	} else {
+		ret = "p";
+	}
+-->
 </body>
 </html>
