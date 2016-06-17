@@ -5,13 +5,18 @@
 </head>
 <body>
 	
+	<center>
+	<font face="Courier New, serif" size="6">
 	<form id="moveInput">
-	Move: <input name="name" type="text" size="20">
+	Move: <input name="name" type="text" size="20" onkeypress="handle(event)">
 	</form>
-	<button onclick="getMoveInput()">Submit</button>
+	</font>
+	<!--<button onclick="getMoveInput()">Submit</button>-->
+	</center>
 	
 	<p id="info1"><br></p>
 	<p id="info2">Lowercase's move</p>
+	<p><br></p>
 	<p id="8"></p>
 	<p id="7"></p>
 	<p id="6"></p>
@@ -26,9 +31,17 @@
 	
 <script>
 
-document.getElementById("info1").innerHTML="derp";
 var boardy = new Board();
 printBoard(boardy);
+
+function handle(e){
+	if(e.keyCode === 13){
+		getMoveInput();
+		e.preventDefault();
+	}
+	return false;
+}
+
 
 // Reads input from the textbox and applies the move if valid, switching
 // whose turn it is
@@ -50,12 +63,14 @@ function getMoveInput(){
 			if (valid){
 				applyMove(startPosition, endPosition);
 				document.getElementById("info1").innerHTML="Last move was " + moveText;
+				moveForm.elements["name"].value = ""; //test
 			} else {
 				document.getElementById("info1").innerHTML="Invalid Move";
 			}
 		}
 		//document.getElementById("info1").innerHTML="start position: " + startPosition.x + startPosition.y;
 	}
+	return false;
 }
 
 // Checks if a move is valid or not based on owner and what sort of piece it is
@@ -74,6 +89,8 @@ function applyMove(startPosition, endPosition){
 	boardy.grid[endPosition.y][endPosition.x] = boardy.grid[startPosition.y][startPosition.x];
 	boardy.grid[startPosition.y][startPosition.x] = 
 		new Empty("empty", boardy, new Position(startPosition.y, startPosition.x));
+	boardy.grid[endPosition.y][endPosition.x].position.y = endPosition.y;
+	boardy.grid[endPosition.y][endPosition.x].position.x = endPosition.x;
 	if (boardy.turn === "white"){
 		boardy.turn = "black";
 		document.getElementById("info2").innerHTML="Uppercase's move";
@@ -207,28 +224,28 @@ function Board(){
 //Fills the given row on the given board with Pawns belonging to the given owner
 function fillRowWithPawns(owner, row, board){
 	for (var i = 1; i < 9; i++){
-		board.grid[row][i] = new Pawn(owner, this, new Position(row, i));
+		board.grid[row][i] = new Pawn(owner, new Position(row, i));
 	}
 }
 
 //Fills the given row on the given board with empty spaces
 function fillRowWithEmpty(row, board){
 	for (var i = 1; i < 9; i++){
-		board.grid[row][i] = new Empty("empty", this, new Position(row, i));
+		board.grid[row][i] = new Empty("empty", new Position(row, i));
 	}
 }
 
 //Fills the given row on the given board with Pawn, Horse, Bishop, etc, belonging
 //to the given owner
 function fillRowWithPieces(owner, row, board){
-	board.grid[row][1] = new Rook(owner, this, new Position(row, 1));
-	board.grid[row][2] = new Horse(owner, this, new Position(row, 2));
-	board.grid[row][3] = new Bishop(owner, this, new Position(row, 3));
-	board.grid[row][4] = new Queen(owner, this, new Position(row, 4));
-	board.grid[row][5] = new King(owner, this, new Position(row, 5));
-	board.grid[row][6] = new Bishop(owner, this, new Position(row, 6));
-	board.grid[row][7] = new Horse(owner, this, new Position(row, 7));
-	board.grid[row][8] = new Rook(owner, this, new Position(row, 8));
+	board.grid[row][1] = new Rook(owner, new Position(row, 1));
+	board.grid[row][2] = new Horse(owner, new Position(row, 2));
+	board.grid[row][3] = new Bishop(owner, new Position(row, 3));
+	board.grid[row][4] = new Queen(owner, new Position(row, 4));
+	board.grid[row][5] = new King(owner, new Position(row, 5));
+	board.grid[row][6] = new Bishop(owner, new Position(row, 6));
+	board.grid[row][7] = new Horse(owner, new Position(row, 7));
+	board.grid[row][8] = new Rook(owner, new Position(row, 8));
 }
 
 //Takes in a piece object and returns how that piece should be displayed as a string
@@ -263,80 +280,68 @@ function Position(y, x){
 	this.y = y;
 }
 
-function Piece(owner, board, position){
-	this.board = board;
+function Piece(owner, position){
 	this.owner = owner;
 	this.position = position;
 	this.validMove = function(){};
 }
 
-function Rook(owner, board, position){
-	this.board = board;
+function Rook(owner, position){
 	this.owner = owner;
 	this.position = position;
 	this.validMove = function(){};
 }
 
-function Horse(owner, board, position){
-	this.board = board;
+function Horse(owner, position){
 	this.owner = owner;
 	this.position = position;
 	this.validMove = function(){};
 }
 
-function Bishop(owner, board, position){
-	this.board = board;
+function Bishop(owner, position){
 	this.owner = owner;
 	this.position = position;
 	this.validMove = function(){};
 }
 
-function Queen(owner, board, position){
-	this.board = board;
+function Queen(owner, position){
 	this.owner = owner;
 	this.position = position;
 	this.validMove = function(){};
 }
 
-function King(owner, board, position){
-	this.board = board;
+function King(owner, position){
 	this.owner = owner;
 	this.position = position;
 	this.validMove = function(){};
 }
 
-function Pawn(owner, board, position){
-	this.board = board;
+function Pawn(owner, position){
 	this.owner = owner;
 	this.position = position;
 	this.validMove = function(endPosition){
-		document.getElementById("info1").innerHTML="derpy4";
 		if (owner === "white"){
-			document.getElementById("info1").innerHTML="derpy5";
 			if (position.x === endPosition.x){
 				//non attack move
-				if (this.position.y + 1 === endPosition.y 
-					&& this.board.grid[endPosition.y][endPosition.x] instanceof Empty){
-					document.getElementById("info1").innerHTML="derpy7";
+				if (position.y + 1 === endPosition.y 
+					&& boardy.grid[endPosition.y][endPosition.x] instanceof Empty){
 					//normal move
 					return true;
 					
-				} else if (postion.y + 2 === endPosition.y 
-							&& board.grid[endPosition.y - 1][endPosition.x] instanceof Empty
-							&& board.grid[endPosition.y][endPosition.x] instanceof Empty
+				} else if (position.y + 2 === endPosition.y 
+							&& boardy.grid[endPosition.y - 1][endPosition.x] instanceof Empty
+							&& boardy.grid[endPosition.y][endPosition.x] instanceof Empty
 							&& position.y === 2){
 					//special 2 space move
-					document.getElementById("info1").innerHTML="derpy7";
 					return true;
 				} else {
-					document.getElementById("info1").innerHTML="derpy7";
 					return false;
 				}
 			} else if ((position.y + 1 === endPosition.y && position.x - 1 === endPosition.x) ||
 						(position.y + 1 === endPosition.y && position.x + 1 === endPosition.x)){
 				//attack move
 				
-				if (board.grid[endPosition.y][endPostion.x].owner === "black"){
+				if (boardy.grid[endPosition.y][endPosition.x].owner === "black"){
 					return true;
 				} else {
 					return false;
@@ -349,13 +354,13 @@ function Pawn(owner, board, position){
 				//non attack move
 				
 				if (position.y - 1 === endPosition.y 
-					&& board.grid[endPosition.y][endPosition.x] instanceof Empty){
+					&& boardy.grid[endPosition.y][endPosition.x] instanceof Empty){
 					//normal move
 					return true;
 					
-				} else if (postion.y - 2 === endPosition.y 
-							&& board.grid[endPosition.y + 1][endPosition.x] instanceof Empty
-							&& board.grid[endPosition.y][endPosition.x] instanceof Empty
+				} else if (position.y - 2 === endPosition.y 
+							&& boardy.grid[endPosition.y + 1][endPosition.x] instanceof Empty
+							&& boardy.grid[endPosition.y][endPosition.x] instanceof Empty
 							&& position.y === 7){
 					//special 2 space move
 					return true;
@@ -366,7 +371,7 @@ function Pawn(owner, board, position){
 						(position.y - 1 === endPosition.y && position.x + 1 === endPosition.x)){
 				//attack move
 				
-				if (board.grid[endPosition.y][endPostion.x].owner === "white"){
+				if (boardy.grid[endPosition.y][endPosition.x].owner === "white"){
 					return true;
 				} else {
 					return false;
@@ -397,22 +402,7 @@ function Empty(owner, board, position){
 	<p id="2">2   p p p p p p p p</p>
 	<p id="1">1   r h b q k b h r</p>
 	<p id="b">0   a b c d e f g h</p>
-	
-		if (piece.owner === "empty"){
-		ret = "-";
-	} else if (piece instanceof Rook){
-		ret = "r";
-	} else if (piece instanceof Horse){
-		ret = "h";
-	} else if (piece instanceof Bishop){
-		ret = "b";
-	} else if (piece instanceof Queen){
-		ret = "q";
-	} else if (piece instanceof King){
-		ret = "k";
-	} else {
-		ret = "p";
-	}
+
 -->
 </body>
 </html>
