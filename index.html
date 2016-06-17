@@ -25,29 +25,31 @@
 	<p id="b2"></p>
 	
 <script>
-//confirm("work dammit");
 
 document.getElementById("info1").innerHTML="derp";
 var boardy = new Board();
 printBoard(boardy);
 
-
+// Reads input from the textbox and applies the move if valid, switching
+// whose turn it is
 function getMoveInput(){
 	var moveForm = document.getElementById("moveInput");
 	var moveText = moveForm.elements["name"].value;
 	if (moveText.length !== 5|| moveText.substring(2, 3) !== " "){
 		document.getElementById("info1").innerHTML="Invalid command";
 	} else {
-		document.getElementById("info1").innerHTML="Your move was " + moveText;
 		var startPosition = getCoordsFromInput(moveText.substring(0,2));
 		var endPosition = getCoordsFromInput(moveText.substring(3, 5));
 		if (startPosition.x === -1 || startPosition.y === -1
 			|| endPosition.x === -1 || endPosition.y === -1){
 			document.getElementById("info1").innerHTML="Invalid position(s)";
 		} else {
+			document.getElementById("info1").innerHTML="derpy";
 			var valid = checkMoveValidity(startPosition, endPosition);
+			document.getElementById("info1").innerHTML="derpy50";
 			if (valid){
 				applyMove(startPosition, endPosition);
+				document.getElementById("info1").innerHTML="Last move was " + moveText;
 			} else {
 				document.getElementById("info1").innerHTML="Invalid Move";
 			}
@@ -56,15 +58,18 @@ function getMoveInput(){
 	}
 }
 
+// Checks if a move is valid or not based on owner and what sort of piece it is
 function checkMoveValidity(startPosition, endPosition){ //obviously incomplete
 	var piece = boardy.grid[startPosition.y][startPosition.x];
 	var target = boardy.grid[endPosition.y][endPosition.x];
-	if (piece.owner !== boardy.turn){
+	document.getElementById("info1").innerHTML="derpy3";
+	if (piece.owner !== boardy.turn || !piece.validMove(endPosition)){
 		return false;
 	}
 	return true;
 }
 
+//applies the move on the board, flipping whose turn it is
 function applyMove(startPosition, endPosition){
 	boardy.grid[endPosition.y][endPosition.x] = boardy.grid[startPosition.y][startPosition.x];
 	boardy.grid[startPosition.y][startPosition.x] = 
@@ -79,6 +84,8 @@ function applyMove(startPosition, endPosition){
 	printBoard(boardy);
 }
 
+//parses string input ("a4" for instance) to get coordinates on the board,
+//which are returned as a position pair
 function getCoordsFromInput(stringInput){
 	var stringX = stringInput.substring(0, 1);
 	var stringY = stringInput.substring(1, 2);
@@ -143,6 +150,7 @@ function getCoordsFromInput(stringInput){
 	return position;
 }
 
+//prints the given board
 function printBoard(board){
 	document.getElementById("8").innerHTML = getBoardRow(board, 8);
 	document.getElementById("7").innerHTML = getBoardRow(board, 7);
@@ -155,6 +163,7 @@ function printBoard(board){
 	document.getElementById("b").innerHTML = "<b>" + board.grid[0] + "</b>";
 }
 
+//returns a row of a board as a string
 function getBoardRow(board, row){
 	var ret = "<b>" + row + "</b>";
 	for (var i = 1; i < 9; i++){
@@ -164,6 +173,7 @@ function getBoardRow(board, row){
 	return ret;
 }
 
+//Creates a new board, initialized with pieces in starting positions
 function Board(){
 	this.grid = new Array();
 	this.grid[0] = "0 a b c d e f g h";
@@ -194,18 +204,22 @@ function Board(){
 	this.turn = "white";
 }
 
+//Fills the given row on the given board with Pawns belonging to the given owner
 function fillRowWithPawns(owner, row, board){
 	for (var i = 1; i < 9; i++){
 		board.grid[row][i] = new Pawn(owner, this, new Position(row, i));
 	}
 }
 
+//Fills the given row on the given board with empty spaces
 function fillRowWithEmpty(row, board){
 	for (var i = 1; i < 9; i++){
 		board.grid[row][i] = new Empty("empty", this, new Position(row, i));
 	}
 }
 
+//Fills the given row on the given board with Pawn, Horse, Bishop, etc, belonging
+//to the given owner
 function fillRowWithPieces(owner, row, board){
 	board.grid[row][1] = new Rook(owner, this, new Position(row, 1));
 	board.grid[row][2] = new Horse(owner, this, new Position(row, 2));
@@ -217,6 +231,7 @@ function fillRowWithPieces(owner, row, board){
 	board.grid[row][8] = new Rook(owner, this, new Position(row, 8));
 }
 
+//Takes in a piece object and returns how that piece should be displayed as a string
 function getDisplay(piece){
 	var ret;
 	if (piece instanceof Empty){ //piece.owner
@@ -242,6 +257,7 @@ function getDisplay(piece){
 	return ret;
 }
 
+//Creates a position pair. Notice the unusual ordering (y, x)
 function Position(y, x){
 	this.x = x;
 	this.y = y;
@@ -251,56 +267,122 @@ function Piece(owner, board, position){
 	this.board = board;
 	this.owner = owner;
 	this.position = position;
-	this.getMoves = function(){};
+	this.validMove = function(){};
 }
 
 function Rook(owner, board, position){
 	this.board = board;
 	this.owner = owner;
 	this.position = position;
-	this.getMoves = function(){};
+	this.validMove = function(){};
 }
 
 function Horse(owner, board, position){
 	this.board = board;
 	this.owner = owner;
 	this.position = position;
-	this.getMoves = function(){};
+	this.validMove = function(){};
 }
 
 function Bishop(owner, board, position){
 	this.board = board;
 	this.owner = owner;
 	this.position = position;
-	this.getMoves = function(){};
+	this.validMove = function(){};
 }
 
 function Queen(owner, board, position){
 	this.board = board;
 	this.owner = owner;
 	this.position = position;
-	this.getMoves = function(){};
+	this.validMove = function(){};
 }
 
 function King(owner, board, position){
 	this.board = board;
 	this.owner = owner;
 	this.position = position;
-	this.getMoves = function(){};
+	this.validMove = function(){};
 }
 
 function Pawn(owner, board, position){
 	this.board = board;
 	this.owner = owner;
 	this.position = position;
-	this.getMoves = function(){};
+	this.validMove = function(endPosition){
+		document.getElementById("info1").innerHTML="derpy4";
+		if (owner === "white"){
+			document.getElementById("info1").innerHTML="derpy5";
+			if (position.x === endPosition.x){
+				//non attack move
+				if (this.position.y + 1 === endPosition.y 
+					&& this.board.grid[endPosition.y][endPosition.x] instanceof Empty){
+					document.getElementById("info1").innerHTML="derpy7";
+					//normal move
+					return true;
+					
+				} else if (postion.y + 2 === endPosition.y 
+							&& board.grid[endPosition.y - 1][endPosition.x] instanceof Empty
+							&& board.grid[endPosition.y][endPosition.x] instanceof Empty
+							&& position.y === 2){
+					//special 2 space move
+					document.getElementById("info1").innerHTML="derpy7";
+					return true;
+				} else {
+					document.getElementById("info1").innerHTML="derpy7";
+					return false;
+				}
+			} else if ((position.y + 1 === endPosition.y && position.x - 1 === endPosition.x) ||
+						(position.y + 1 === endPosition.y && position.x + 1 === endPosition.x)){
+				//attack move
+				
+				if (board.grid[endPosition.y][endPostion.x].owner === "black"){
+					return true;
+				} else {
+					return false;
+				}
+			} else{
+				return false;
+			}
+		} else { //owner is black
+			if (position.x === endPosition.x){
+				//non attack move
+				
+				if (position.y - 1 === endPosition.y 
+					&& board.grid[endPosition.y][endPosition.x] instanceof Empty){
+					//normal move
+					return true;
+					
+				} else if (postion.y - 2 === endPosition.y 
+							&& board.grid[endPosition.y + 1][endPosition.x] instanceof Empty
+							&& board.grid[endPosition.y][endPosition.x] instanceof Empty
+							&& position.y === 7){
+					//special 2 space move
+					return true;
+				} else {
+					return false;
+				}
+			} else if ((position.y - 1 === endPosition.y && position.x - 1 === endPosition.x) ||
+						(position.y - 1 === endPosition.y && position.x + 1 === endPosition.x)){
+				//attack move
+				
+				if (board.grid[endPosition.y][endPostion.x].owner === "white"){
+					return true;
+				} else {
+					return false;
+				}
+			} else{
+				return false;
+			}
+		}
+	};
 }
 
 function Empty(owner, board, position){
 	this.board = board;
 	this.owner = owner;
 	this.position = position;
-	this.getMoves = function(){};
+	this.validMove = function(){};
 }
 
 </script>
