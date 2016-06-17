@@ -357,7 +357,18 @@ function Rook(owner, position){
 function Horse(owner, position){
 	this.owner = owner;
 	this.position = position;
-	this.validMove = function(endPosition){};
+	this.validMove = function(endPosition){
+		var xDif = endPosition.x - position.x;
+		var yDif = endPosition.y - position.y;
+		if (((yDif === 2 || yDif === -2) && (xDif === 1 || xDif === -1))
+			|| ((yDif === 1 || yDif === -1) && (xDif === 2 || xDif === -2))){
+			if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+				return true;
+			}
+			return false;
+		}
+		return false;
+	};
 }
 
 function Bishop(owner, position){
@@ -425,13 +436,145 @@ function Bishop(owner, position){
 function Queen(owner, position){
 	this.owner = owner;
 	this.position = position;
-	this.validMove = function(endPosition){};
+	this.validMove = function(endPosition){
+		if (position.x === endPosition.x){
+		//vertical movement
+		
+			var yDif = endPosition.y - position.y;
+			if (yDif > 0){
+				//moving upward on board
+				
+				for (var i = 1; i < yDif; i++){
+					if (!(boardy.grid[i + position.y][position.x] instanceof Empty)){
+						return false;
+					}
+				}
+				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+					return true;
+				}
+				return false;
+			} else {
+				//moving downward on board
+				yDif = -1 * yDif;
+				for (var i = 1; i < yDif; i++){
+					if (!(boardy.grid[position.y - i][position.x] instanceof Empty)){
+						return false;
+					}
+				}
+				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+					return true;
+				}
+				return false;
+			}
+		} else if (position.y === endPosition.y){
+		//horizontal movement
+			
+			var xDif = endPosition.x - position.x;
+			if (xDif > 0){
+				//moving right on board
+				
+				for (var i = 1; i < xDif; i++){
+					if(!(boardy.grid[position.y][i + position.x] instanceof Empty)){
+						return false;
+					}
+				}
+				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+					return true;
+				}
+				return false;
+			} else {
+				//moving left on board
+				xDif = -1 * xDif;
+				for (var i = 1; i < xDif; i++){
+					if (!(boardy.grid[position.y][position.x - i] instanceof Empty)){
+						return false;
+					}
+				}
+				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+					return true;
+				}
+				return false;
+			}
+		} else {
+			var yDif = endPosition.y - position.y;
+			var xDif = endPosition.x - position.x;
+			if (yDif > 0 && xDif > 0 && xDif === yDif){
+				//up-right movement
+				for (var i = 1; i < yDif; i++){
+					if (!(boardy.grid[position.y + i][position.x + i] instanceof Empty)){
+						return false;
+					}
+				}
+				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+						return true;
+					}
+				return false;
+				
+			} else if (yDif > 0 && xDif < 0 && xDif * -1 === yDif){
+				//up-left movement
+				
+				for (var i = 1; i < yDif; i++){
+					if (!(boardy.grid[position.y + i][position.x - i] instanceof Empty)){
+						return false;
+					}
+				}
+				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+						return true;
+					}
+				return false;
+				
+			} else if (yDif < 0 && xDif < 0 && xDif === yDif){
+				//down-left movement
+				
+				for (var i = 1; i < yDif * -1; i++){
+					if (!(boardy.grid[position.y - i][position.x - i] instanceof Empty)){
+						return false;
+					}
+				}
+				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+						return true;
+					}
+				return false;
+				
+			} else if (yDif < 0 && xDif > 0 && xDif === yDif * -1){
+				//down-right movement
+				
+				for (var i = 1; i < xDif; i++){
+					if (!(boardy.grid[position.y - i][position.x + i] instanceof Empty)){
+						return false;
+					}
+				}
+				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+						return true;
+					}
+				return false;
+			} else {
+				return false;
+			}
+		}
+	};
 }
 
 function King(owner, position){
 	this.owner = owner;
 	this.position = position;
-	this.validMove = function(endPosition){};
+	this.validMove = function(endPosition){
+		var xDif = endPosition.x - position.x;
+		var yDif = endPosition.y - position.y;
+		if (!(xDif === -1 || xDif === 1 || xDif === 0)){
+			return false;
+		}
+		if (!(yDif === -1 || yDif === 1 || yDif === 0)){
+			return false;
+		}
+		if (xDif === 0 && yDif === 0){
+			return false;
+		}
+		if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+			return true;
+		}
+		return false;
+	};
 }
 
 function Pawn(owner, position){
