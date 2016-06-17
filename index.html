@@ -35,6 +35,7 @@ var boardy = new Board();
 printBoard(boardy);
 var wkPosition = new Position(1, 5);
 var bkPosition = new Position(8, 5);
+var stillGoing = true;
 
 function handle(e){
 	if(e.keyCode === 13){
@@ -46,59 +47,75 @@ function handle(e){
 
 
 // Reads input from the textbox and applies the move if valid, switching
-// whose turn it is
+// whose turn it is. Checks for checks, checkmates, etc.
 function getMoveInput(){
-	var moveForm = document.getElementById("moveInput");
-	var moveText = moveForm.elements["name"].value;
-	if (moveText.length !== 5|| moveText.substring(2, 3) !== " "){
-		document.getElementById("info1").innerHTML="Invalid command";
-	} else {
-		var startPosition = getCoordsFromInput(moveText.substring(0,2));
-		var endPosition = getCoordsFromInput(moveText.substring(3, 5));
-		if (startPosition.x === -1 || startPosition.y === -1
-			|| endPosition.x === -1 || endPosition.y === -1){
-			document.getElementById("info1").innerHTML="Invalid position(s)";
+	if (stillGoing){
+		var moveForm = document.getElementById("moveInput");
+		var moveText = moveForm.elements["name"].value;
+		//check for correct string format
+		if (moveText.length !== 5|| moveText.substring(2, 3) !== " "){
+			document.getElementById("info1").innerHTML="Invalid command";
 		} else {
-			document.getElementById("info1").innerHTML="derpy";
-			var valid = checkMoveValidity(startPosition, endPosition);
-			document.getElementById("info1").innerHTML="derpy50";
-			
-			if (valid){
-				var piece = boardy.grid[startPosition.y][startPosition.x];
-				var target = boardy.grid[endPosition.y][endPosition.x];
-				var playerMakingMove = boardy.turn;
-				
-				//apply move, see if put self in check
-				applyMove(startPosition, endPosition);
-				var putSelfInCheck = playerInCheck(playerMakingMove);
-				
-				if (putSelfInCheck){
-					//if put self in check, undo move
-					undoMove(startPosition, endPosition, target);
-					document.getElementById("info1").innerHTML="Invalid Move, put's you in check";
-				} else {
-					//otherwise, don't undo, update stuff accordingly.
-					//see if we put the other person in check
-					document.getElementById("info1").innerHTML="Last move was " + moveText;
-					moveForm.elements["name"].value = "";
-					var putOtherInCheck = playerInCheck(boardy.turn);
-					if (putOtherInCheck){
-						document.getElementById("b2").innerHTML="CHECK!";
-					} else {
-						document.getElementById("b2").innerHTML="";
-					}
-				}
-				
-				//update visual of whose move it is
-				if (boardy.turn === "white"){
-					document.getElementById("info2").innerHTML="Lowercase's move";
-				} else {
-					document.getElementById("info2").innerHTML="Uppercase's move";
-				}
-				//print board
-				printBoard(boardy);
+			//parse for start and end positions, check if they are valid
+			var startPosition = getCoordsFromInput(moveText.substring(0,2));
+			var endPosition = getCoordsFromInput(moveText.substring(3, 5));
+			if (startPosition.x === -1 || startPosition.y === -1
+				|| endPosition.x === -1 || endPosition.y === -1){
+				document.getElementById("info1").innerHTML="Invalid position(s)";
 			} else {
-				document.getElementById("info1").innerHTML="Invalid Move";
+				//check if the movement itself is valid
+				var valid = checkMoveValidity(startPosition, endPosition);
+				
+				if (valid){
+					var piece = boardy.grid[startPosition.y][startPosition.x];
+					var target = boardy.grid[endPosition.y][endPosition.x];
+					var playerMakingMove = boardy.turn;
+					
+					//apply move, see if put self in check
+					applyMove(startPosition, endPosition);
+					var putSelfInCheck = playerInCheck(playerMakingMove);
+					
+					if (putSelfInCheck){
+						//if put self in check, undo move
+						undoMove(startPosition, endPosition, target);
+						document.getElementById("info1").innerHTML="Invalid Move, put's you in check";
+					} else {
+						//otherwise, don't undo, update stuff accordingly.
+						//see if we put the other person in check
+						document.getElementById("info1").innerHTML="Last move was " + moveText;
+						moveForm.elements["name"].value = "";
+						var putOtherInCheck = playerInCheck(boardy.turn);
+						if (putOtherInCheck){
+							document.getElementById("b2").innerHTML="CHECK!";
+							
+							if (checkMate(boardy.turn)){
+								//we have a winner
+								stillGoing = false;
+								document.getElementById("b2").innerHTML="CHECKMATE!";
+								var winner;
+								if (boardy.turn === "white"){
+									winner = "Uppercase";
+								} else {
+									winner = "Lowercase";
+								}
+								document.getElementById("info2").innerHTML = winner + " wins!";
+							}
+						} else {
+							document.getElementById("b2").innerHTML="";
+						}
+					}
+					
+					//update visual of whose move it is if stillGoing
+					if (boardy.turn === "white" && stillGoing){
+						document.getElementById("info2").innerHTML="Lowercase's move";
+					} else if (stillGoing){
+						document.getElementById("info2").innerHTML="Uppercase's move";
+					}
+					//print board
+					printBoard(boardy);
+				} else {
+					document.getElementById("info1").innerHTML="Invalid Move";
+				}
 			}
 		}
 	}
@@ -145,8 +162,40 @@ function playerInCheck(player){
 
 //returns true if the given player has lost
 function checkMate(player){
-	
+	var playersPieces = new Array();
+	//get all their pieces
+	for (var i = 1; i < 9; i++){
+		for (var j = 1; j < 9; j++){
+			if (boardy.grid[i][j].owner === player){
+				playersPieces.push(boardy.grid[i][j]);
+			}
+		}
+	}
+	//for each piece, test validity of moving to every spot on the board
+	//If it's valid, try applying that move, and see if the player is still in check
+	//If they aren't in check anymore, return false, because it's not a checkmate.
+	//If each move results in them still being in check, return true
+	for (var m = 0; m < playersPieces.length; m++){
+		for (var i = 1; i < 9; i++){
+			for (var j = 1; j < 9; j++){
+				if (checkMoveValidity(playersPieces[m].position, new Position(i, j))){
+					var startPos = new Position(playersPieces[m].position.y, playersPieces[m].position.x);
+					var endPos = new Position(i, j);
+					var target = boardy.grid[endPos.y][endPos.x];
+					applyMove(startPos, endPos);
+					if (!playerInCheck(player)){
+						undoMove(startPos, endPos, target);
+						return false;
+					} else {
+						undoMove(startPos, endPos, target);
+					}
+				}
+			}
+		}
+	}
+	return true;
 }
+
 
 //applies the move on the board, flipping whose turn it is. Updates the king's global
 //position if necessary
