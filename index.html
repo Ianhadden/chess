@@ -33,6 +33,8 @@
 
 var boardy = new Board();
 printBoard(boardy);
+var wkPosition = new Position(1, 5);
+var bkPosition = new Position(8, 5);
 
 function handle(e){
 	if(e.keyCode === 13){
@@ -60,15 +62,45 @@ function getMoveInput(){
 			document.getElementById("info1").innerHTML="derpy";
 			var valid = checkMoveValidity(startPosition, endPosition);
 			document.getElementById("info1").innerHTML="derpy50";
+			
 			if (valid){
+				var piece = boardy.grid[startPosition.y][startPosition.x];
+				var target = boardy.grid[endPosition.y][endPosition.x];
+				var playerMakingMove = boardy.turn;
+				
+				//apply move, see if put self in check
 				applyMove(startPosition, endPosition);
-				document.getElementById("info1").innerHTML="Last move was " + moveText;
-				moveForm.elements["name"].value = ""; //test
+				var putSelfInCheck = playerInCheck(playerMakingMove);
+				
+				if (putSelfInCheck){
+					//if put self in check, undo move
+					undoMove(startPosition, endPosition, target);
+					document.getElementById("info1").innerHTML="Invalid Move, put's you in check";
+				} else {
+					//otherwise, don't undo, update stuff accordingly.
+					//see if we put the other person in check
+					document.getElementById("info1").innerHTML="Last move was " + moveText;
+					moveForm.elements["name"].value = "";
+					var putOtherInCheck = playerInCheck(boardy.turn);
+					if (putOtherInCheck){
+						document.getElementById("b2").innerHTML="CHECK!";
+					} else {
+						document.getElementById("b2").innerHTML="";
+					}
+				}
+				
+				//update visual of whose move it is
+				if (boardy.turn === "white"){
+					document.getElementById("info2").innerHTML="Lowercase's move";
+				} else {
+					document.getElementById("info2").innerHTML="Uppercase's move";
+				}
+				//print board
+				printBoard(boardy);
 			} else {
 				document.getElementById("info1").innerHTML="Invalid Move";
 			}
 		}
-		//document.getElementById("info1").innerHTML="start position: " + startPosition.x + startPosition.y;
 	}
 	return false;
 }
@@ -77,28 +109,97 @@ function getMoveInput(){
 function checkMoveValidity(startPosition, endPosition){ //obviously incomplete
 	var piece = boardy.grid[startPosition.y][startPosition.x];
 	var target = boardy.grid[endPosition.y][endPosition.x];
-	document.getElementById("info1").innerHTML="derpy3";
+	//document.getElementById("info1").innerHTML="derpy3";
 	if (piece.owner !== boardy.turn || !piece.validMove(endPosition)){
 		return false;
 	}
 	return true;
 }
 
-//applies the move on the board, flipping whose turn it is
+//returns true if the given player is in check
+function playerInCheck(player){
+	var correctTurn = boardy.turn;
+	var kingPos;
+	
+	//gets the king position of the player in question.
+	//switches whose turn it is to the opposing player temporarily in order to test
+	if (player === "white"){
+		kingPos = wkPosition;
+		boardy.turn = "black";
+	} else {
+		kingPos = bkPosition;
+		boardy.turn = "white";
+	}
+	//see if any position of the board can successfully attack the king
+	for (var i = 1; i < 9; i++){
+		for (var j = 1; j < 9; j++){
+			if (checkMoveValidity(new Position(i, j), kingPos)){
+				boardy.turn = correctTurn;
+				return true;
+			};
+		}
+	}
+	boardy.turn = correctTurn;
+	return false;
+}
+
+//returns true if the given player has lost
+function checkMate(player){
+	
+}
+
+//applies the move on the board, flipping whose turn it is. Updates the king's global
+//position if necessary
 function applyMove(startPosition, endPosition){
 	boardy.grid[endPosition.y][endPosition.x] = boardy.grid[startPosition.y][startPosition.x];
 	boardy.grid[startPosition.y][startPosition.x] = 
 		new Empty("empty", boardy, new Position(startPosition.y, startPosition.x));
 	boardy.grid[endPosition.y][endPosition.x].position.y = endPosition.y;
 	boardy.grid[endPosition.y][endPosition.x].position.x = endPosition.x;
+	
+	if (boardy.grid[endPosition.y][endPosition.x] instanceof King){
+		if (boardy.turn === "white"){
+			wkPosition.x = endPosition.x;
+			wkPosition.y = endPosition.y;
+		} else {
+			bkPosition.x = endPosition.x;
+			bkPosition.y = endPosition.y;
+		}
+	}
+	
 	if (boardy.turn === "white"){
 		boardy.turn = "black";
-		document.getElementById("info2").innerHTML="Uppercase's move";
 	} else {
 		boardy.turn = "white";
-		document.getElementById("info2").innerHTML="Lowercase's move";
 	}
-	printBoard(boardy);
+	//printBoard(boardy);
+}
+
+//After a move has been made, if the player that made that move is in check,
+//it wasn't actually valid, so we undo it. Function takes the start position
+//and end position of said move, as well as whatever piece was taken (or Empty),
+//and puts them back in their proper places. Switches whose turn it is back also.
+function undoMove(startPosition, endPosition, target){
+	boardy.grid[startPosition.y][startPosition.x] = boardy.grid[endPosition.y][endPosition.x];
+	boardy.grid[endPosition.y][endPosition.x] = target;
+	boardy.grid[startPosition.y][startPosition.x].position.y = startPosition.y;
+	boardy.grid[startPosition.y][startPosition.x].position.x = startPosition.x;
+	
+	if (boardy.turn === "white"){
+		boardy.turn = "black";
+	} else {
+		boardy.turn = "white";
+	}
+	
+	if (boardy.grid[startPosition.y][startPosition.x] instanceof King){
+		if (boardy.turn === "white"){
+			wkPosition.x = startPosition.x;
+			wkPosition.y = startPosition.y;
+		} else {
+			bkPosition.x = startPosition.x;
+			bkPosition.y = startPosition.y;
+		}
+	}
 }
 
 //parses string input ("a4" for instance) to get coordinates on the board,
@@ -648,7 +749,9 @@ function Empty(owner, board, position){
 	this.board = board;
 	this.owner = owner;
 	this.position = position;
-	this.validMove = function(){};
+	this.validMove = function(endPosition){
+		return false;
+	};
 }
 
 </script>
