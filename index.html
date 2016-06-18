@@ -11,7 +11,6 @@
 	Move: <input name="name" type="text" size="20" onkeypress="handle(event)">
 	</form>
 	</font>
-	<!--<button onclick="getMoveInput()">Submit</button>-->
 	</center>
 	
 	<p id="info1"><br></p>
@@ -35,6 +34,8 @@ printBoard(boardy);
 var wkPosition = new Position(1, 5);
 var bkPosition = new Position(8, 5);
 var stillGoing = true;
+
+// Triggered on key press. Calls getMoveInput() if enter was pressed
 function handle(e){
 	if(e.keyCode === 13){
 		getMoveInput();
@@ -42,8 +43,10 @@ function handle(e){
 	}
 	return false;
 }
-// Reads input from the textbox and applies the move if valid, switching
-// whose turn it is. Checks for checks, checkmates, etc.
+
+// Reads input from the textbox and parses it. Checks if that move is
+// valid based on board positions and the indicated piece. If not valid,
+// that is displayed. If valid, control is passed to ValidMoveProcedure()
 function getMoveInput(){
 	if (stillGoing){
 		var moveForm = document.getElementById("moveInput");
@@ -82,6 +85,10 @@ function getMoveInput(){
 	return false;
 }
 
+//Applies a move (with the precondition that that move is valid). Once applied,
+//checks if that move put the moving player in check. Undoes it if that is the case.
+//Otherwise, checks if it put the other player in check, if it caused a checkmate,
+//stalemate, etc.
 function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 	var piece = boardy.grid[startPosition.y][startPosition.x];
 	var target = boardy.grid[endPosition.y][endPosition.x];
@@ -100,27 +107,21 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 		//see if we put the other person in check
 		document.getElementById("info1").innerHTML="Last move was " + moveText;
 		moveForm.elements["name"].value = "";
-		var putOtherInCheck = playerInCheck(boardy.turn);
-		if (putOtherInCheck){
-			document.getElementById("b2").innerHTML="CHECK!";
-			if (checkMate(boardy.turn)){
-
-				//we have a winner
-				stillGoing = false;
-				document.getElementById("b2").innerHTML="CHECKMATE!";
-				var winner;
-				if (boardy.turn === "white"){
-					winner = "Uppercase";
-				} else {
-					winner = "Lowercase";
-				}
-				document.getElementById("info2").innerHTML = winner + " wins!";
+		
+		if (checkMate(boardy.turn)){
+			stillGoing = false;
+			document.getElementById("b2").innerHTML="CHECKMATE!";
+			if (boardy.turn === "white"){
+				document.getElementById("info2").innerHTML = "Uppercase wins!";
+			} else {
+				document.getElementById("info2").innerHTML = "Lowercase wins!";
 			}
 		} else if (stalemate(boardy.turn)){
 			stillGoing = false;
 			document.getElementById("b2").innerHTML="Stalemate!";
 			document.getElementById("info2").innerHTML = "It's a draw";
-			
+		} else if (playerInCheck(boardy.turn)){
+			document.getElementById("b2").innerHTML="CHECK!";		
 		} else {
 			document.getElementById("b2").innerHTML="";
 		}
@@ -128,7 +129,8 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 }
 
 // Checks if a move is valid or not based on owner and what sort of piece it is
-function checkMoveValidity(startPosition, endPosition){ //obviously incomplete
+// A move which puts the moving player in check IS valid as defined by this function
+function checkMoveValidity(startPosition, endPosition){
 	var piece = boardy.grid[startPosition.y][startPosition.x];
 	var target = boardy.grid[endPosition.y][endPosition.x];
 	if (piece.owner !== boardy.turn || !piece.validMove(endPosition)){
@@ -239,6 +241,7 @@ function applyMove(startPosition, endPosition){
 	//printBoard(boardy);
 }
 
+//Called by applyMove() if the move is just an ordinary move
 function standardApplyMove(startPosition, endPosition){
 	boardy.grid[endPosition.y][endPosition.x] = boardy.grid[startPosition.y][startPosition.x];
 	boardy.grid[startPosition.y][startPosition.x] = 
@@ -254,20 +257,16 @@ function standardApplyMove(startPosition, endPosition){
 	}
 }
 
+//Called by applyMove() if the move is castling
 function castleApplyMove(startPosition, endPosition){
-	
 	//move king
 	standardApplyMove(startPosition, endPosition);
-	document.getElementById("info1").innerHTML="derpy5";
-	//move rook, update hasMoved
+	//move rook
 	var rook;
 	if (endPosition.x - startPosition.x === 2){
-		document.getElementById("info1").innerHTML="derpy6";
 		rook = boardy.grid[endPosition.y][endPosition.x + 1];
-		document.getElementById("info1").innerHTML="derpy7";
 		standardApplyMove(new Position(rook.position.y, rook.position.x), 
 						new Position(rook.position.y, rook.position.x - 2));
-		document.getElementById("info1").innerHTML="derpy8";
 	} else { //endPosition.x - startPosition.x === -2
 		rook = boardy.grid[endPosition.y][endPosition.x - 2];
 		standardApplyMove(new Position(rook.position.y, rook.position.x), 
@@ -276,11 +275,10 @@ function castleApplyMove(startPosition, endPosition){
 	
 }
 
-
 //After a move has been made, if the player that made that move is in check,
-//it wasn't actually valid, so we undo it. Function takes the start position
-//and end position of said move, as well as whatever piece was taken (or Empty),
-//and puts them back in their proper places. Switches whose turn it is back also.
+//it wasn't actually valid in the grander sense, so we undo it. Function takes 
+//the start position and end position of said move, as well as whatever piece was taken
+//(or Empty), and puts them back in their proper places. Switches whose turn it is back also.
 function undoMove(startPosition, endPosition, target){
 	
 	if (boardy.grid[endPosition.y][endPosition.x] instanceof King &&
@@ -309,6 +307,7 @@ function undoMove(startPosition, endPosition, target){
 	}
 }
 
+//Called by undoMove if the move was just a ordinary move
 function standardUndoMove(startPosition, endPosition, target){
 	boardy.grid[startPosition.y][startPosition.x] = boardy.grid[endPosition.y][endPosition.x];
 	boardy.grid[endPosition.y][endPosition.x] = target;
@@ -321,6 +320,7 @@ function standardUndoMove(startPosition, endPosition, target){
 	}
 }
 
+//Called by undoMove if the move was a castling move
 function castleUndoMove(startPosition, endPosition, target){
 	standardUndoMove(startPosition, endPosition, target);
 	var rook;
@@ -404,6 +404,7 @@ function getCoordsFromInput(stringInput){
 	var position = new Position(numY, numX);
 	return position;
 }
+
 //prints the given board
 function printBoard(board){
 	document.getElementById("8").innerHTML = getBoardRow(board, 8);
@@ -416,6 +417,7 @@ function printBoard(board){
 	document.getElementById("1").innerHTML = getBoardRow(board, 1);
 	document.getElementById("b").innerHTML = "<b>" + board.grid[0] + "</b>";
 }
+
 //returns a row of a board as a string
 function getBoardRow(board, row){
 	var ret = "<b>" + row + "</b>";
@@ -425,6 +427,7 @@ function getBoardRow(board, row){
 	}
 	return ret;
 }
+
 //Creates a new board, initialized with pieces in starting positions
 function Board(){
 	this.grid = new Array();
@@ -455,18 +458,21 @@ function Board(){
 	fillRowWithPieces("black", 8, this);
 	this.turn = "white";
 }
+
 //Fills the given row on the given board with Pawns belonging to the given owner
 function fillRowWithPawns(owner, row, board){
 	for (var i = 1; i < 9; i++){
 		board.grid[row][i] = new Pawn(owner, new Position(row, i));
 	}
 }
+
 //Fills the given row on the given board with empty spaces
 function fillRowWithEmpty(row, board){
 	for (var i = 1; i < 9; i++){
 		board.grid[row][i] = new Empty("empty", new Position(row, i));
 	}
 }
+
 //Fills the given row on the given board with Pawn, Horse, Bishop, etc, belonging
 //to the given owner
 function fillRowWithPieces(owner, row, board){
@@ -479,6 +485,7 @@ function fillRowWithPieces(owner, row, board){
 	board.grid[row][7] = new Horse(owner, new Position(row, 7));
 	board.grid[row][8] = new Rook(owner, new Position(row, 8));
 }
+
 //Takes in a piece object and returns how that piece should be displayed as a string
 function getDisplay(piece){
 	var ret;
@@ -504,16 +511,13 @@ function getDisplay(piece){
 	}
 	return ret;
 }
+
 //Creates a position pair. Notice the unusual ordering (y, x)
 function Position(y, x){
 	this.x = x;
 	this.y = y;
 }
-function Piece(owner, position){
-	this.owner = owner;
-	this.position = position;
-	this.validMove = function(){};
-}
+
 function Rook(owner, position){
 	this.owner = owner;
 	this.position = position;
@@ -582,6 +586,7 @@ function Rook(owner, position){
 		}
 	};
 }
+
 function Horse(owner, position){
 	this.owner = owner;
 	this.position = position;
@@ -598,6 +603,7 @@ function Horse(owner, position){
 		return false;
 	};
 }
+
 function Bishop(owner, position){
 	this.owner = owner;
 	this.position = position;
@@ -659,6 +665,7 @@ function Bishop(owner, position){
 		}
 	};
 }
+
 function Queen(owner, position){
 	this.owner = owner;
 	this.position = position;
@@ -780,6 +787,7 @@ function Queen(owner, position){
 		}
 	};
 }
+
 function King(owner, position){
 	this.owner = owner;
 	this.position = position;
@@ -893,6 +901,7 @@ function Pawn(owner, position){
 		}
 	};
 }
+
 function Empty(owner, board, position){
 	this.board = board;
 	this.owner = owner;
