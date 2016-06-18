@@ -196,11 +196,16 @@ function checkMate(player){
 //applies the move on the board, flipping whose turn it is. Updates the king's global
 //position if necessary
 function applyMove(startPosition, endPosition){
-	boardy.grid[endPosition.y][endPosition.x] = boardy.grid[startPosition.y][startPosition.x];
-	boardy.grid[startPosition.y][startPosition.x] = 
-		new Empty("empty", boardy, new Position(startPosition.y, startPosition.x));
-	boardy.grid[endPosition.y][endPosition.x].position.y = endPosition.y;
-	boardy.grid[endPosition.y][endPosition.x].position.x = endPosition.x;
+	
+	if (boardy.grid[startPosition.y][startPosition.x] instanceof King &&
+		((startPosition.x - endPosition.x === 2) || (startPosition.x - endPosition.x === -2))){
+		document.getElementById("info1").innerHTML="derpy4";
+		//castling
+		castleApplyMove(startPosition, endPosition);
+	} else {
+		//normal move
+		standardApplyMove(startPosition, endPosition);
+	}
 	
 	if (boardy.grid[endPosition.y][endPosition.x] instanceof King){
 		if (boardy.turn === "white"){
@@ -219,15 +224,59 @@ function applyMove(startPosition, endPosition){
 	}
 	//printBoard(boardy);
 }
+
+function standardApplyMove(startPosition, endPosition){
+	boardy.grid[endPosition.y][endPosition.x] = boardy.grid[startPosition.y][startPosition.x];
+	boardy.grid[startPosition.y][startPosition.x] = 
+	new Empty("empty", boardy, new Position(startPosition.y, startPosition.x));
+	var movedPiece = boardy.grid[endPosition.y][endPosition.x];
+	movedPiece.position.y = endPosition.y;
+	movedPiece.position.x = endPosition.x;
+	
+	//update hasMoved if applicable
+	if (movedPiece instanceof King || movedPiece instanceof Rook){
+		movedPiece.hasMoved[0] = movedPiece.hasMoved[1];
+		movedPiece.hasMoved[1] = true;
+	}
+}
+
+function castleApplyMove(startPosition, endPosition){
+	
+	//move king
+	standardApplyMove(startPosition, endPosition);
+	document.getElementById("info1").innerHTML="derpy5";
+	//move rook, update hasMoved
+	var rook;
+	if (endPosition.x - startPosition.x === 2){
+		document.getElementById("info1").innerHTML="derpy6";
+		rook = boardy.grid[endPosition.y][endPosition.x + 1];
+		document.getElementById("info1").innerHTML="derpy7";
+		standardApplyMove(new Position(rook.position.y, rook.position.x), 
+						new Position(rook.position.y, rook.position.x - 2));
+		document.getElementById("info1").innerHTML="derpy8";
+	} else { //endPosition.x - startPosition.x === -2
+		rook = boardy.grid[endPosition.y][endPosition.x - 2];
+		standardApplyMove(new Position(rook.position.y, rook.position.x), 
+						new Position(rook.position.y, rook.position.x + 3));
+	}
+	
+}
+
+
 //After a move has been made, if the player that made that move is in check,
 //it wasn't actually valid, so we undo it. Function takes the start position
 //and end position of said move, as well as whatever piece was taken (or Empty),
 //and puts them back in their proper places. Switches whose turn it is back also.
 function undoMove(startPosition, endPosition, target){
-	boardy.grid[startPosition.y][startPosition.x] = boardy.grid[endPosition.y][endPosition.x];
-	boardy.grid[endPosition.y][endPosition.x] = target;
-	boardy.grid[startPosition.y][startPosition.x].position.y = startPosition.y;
-	boardy.grid[startPosition.y][startPosition.x].position.x = startPosition.x;
+	
+	if (boardy.grid[endPosition.y][endPosition.x] instanceof King &&
+		((startPosition.x - endPosition.x === 2) || (startPosition.x - endPosition.x === -2))){
+		//castling
+		castleUndoMove(startPosition, endPosition, target);
+	} else {
+		//normal move
+		standardUndoMove(startPosition, endPosition, target);
+	}
 	
 	if (boardy.turn === "white"){
 		boardy.turn = "black";
@@ -245,6 +294,37 @@ function undoMove(startPosition, endPosition, target){
 		}
 	}
 }
+
+function standardUndoMove(startPosition, endPosition, target){
+	boardy.grid[startPosition.y][startPosition.x] = boardy.grid[endPosition.y][endPosition.x];
+	boardy.grid[endPosition.y][endPosition.x] = target;
+	var unMovedPiece = boardy.grid[startPosition.y][startPosition.x];
+	unMovedPiece.position.y = startPosition.y;
+	unMovedPiece.position.x = startPosition.x;
+	
+	if (unMovedPiece instanceof King || unMovedPiece instanceof Rook){
+		unMovedPiece.hasMoved[1] = unMovedPiece.hasMoved[0];
+	}
+}
+
+function castleUndoMove(startPosition, endPosition, target){
+	standardUndoMove(startPosition, endPosition, target);
+	var rook;
+	if (endPosition.x - startPosition.x === 2){
+		rook = boardy.grid[startPosition.y][startPosition.x + 1];
+		standardUndoMove(new Position(rook.position.y, rook.position.x + 2),
+						new Position(rook.position.y, rook.position.x), 
+						new Empty("empty", new Position(rook.position.y, rook.position.x)));
+						
+	} else { //endPosition.x - startPosition.x === -2
+		rook = boardy.grid[startPosition.y][startPosition.x - 1];
+		standardUndoMove(new Position(rook.position.y, rook.position.x - 3),
+						new Posiion(rook.position.y, rook.position.x),
+						new Empty("empty", new Position(rook.position.y, rook.position.x)));
+		
+	}
+}
+
 //parses string input ("a4" for instance) to get coordinates on the board,
 //which are returned as a position pair
 function getCoordsFromInput(stringInput){
@@ -697,7 +777,6 @@ function King(owner, position){
 			//castling
 			var rook;
 			if (xDif === 2){
-				document.getElementById("info1").innerHTML="derpy4";
 				rook = boardy.grid[position.y][position.x + 3];
 				if (!(boardy.grid[position.y][position.x + 1] instanceof Empty) ||
 					!(boardy.grid[position.y][position.x + 2] instanceof Empty)){
