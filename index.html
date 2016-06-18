@@ -67,7 +67,7 @@ function getMoveInput(){
 					validMoveProcedure(startPosition, endPosition, moveForm, moveText);
 					
 					printBoard(boardy);
-					if (boardy.turn === "white" && stillGoing){
+					if ((boardy.turn === "white") && stillGoing){
 						document.getElementById("info2").innerHTML="Lowercase's move";
 					} else if (stillGoing){
 						document.getElementById("info2").innerHTML="Uppercase's move";
@@ -103,8 +103,8 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 		var putOtherInCheck = playerInCheck(boardy.turn);
 		if (putOtherInCheck){
 			document.getElementById("b2").innerHTML="CHECK!";
-			
 			if (checkMate(boardy.turn)){
+
 				//we have a winner
 				stillGoing = false;
 				document.getElementById("b2").innerHTML="CHECKMATE!";
@@ -116,6 +116,11 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 				}
 				document.getElementById("info2").innerHTML = winner + " wins!";
 			}
+		} else if (stalemate(boardy.turn)){
+			stillGoing = false;
+			document.getElementById("b2").innerHTML="Stalemate!";
+			document.getElementById("info2").innerHTML = "It's a draw";
+			
 		} else {
 			document.getElementById("b2").innerHTML="";
 		}
@@ -126,12 +131,12 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 function checkMoveValidity(startPosition, endPosition){ //obviously incomplete
 	var piece = boardy.grid[startPosition.y][startPosition.x];
 	var target = boardy.grid[endPosition.y][endPosition.x];
-	//document.getElementById("info1").innerHTML="derpy3";
 	if (piece.owner !== boardy.turn || !piece.validMove(endPosition)){
 		return false;
 	}
 	return true;
 }
+
 //returns true if the given player is in check
 function playerInCheck(player){
 	var correctTurn = boardy.turn;
@@ -152,7 +157,7 @@ function playerInCheck(player){
 			if (checkMoveValidity(new Position(i, j), kingPos)){
 				boardy.turn = correctTurn;
 				return true;
-			};
+			}
 		}
 	}
 	boardy.turn = correctTurn;
@@ -160,6 +165,16 @@ function playerInCheck(player){
 }
 //returns true if the given player has lost
 function checkMate(player){
+	return (playerInCheck(player) && everyMoveIsCheck(player));
+}
+
+//returns true if the player is in a stalemate position
+function stalemate(player){
+	return (!(playerInCheck(player)) && everyMoveIsCheck(player));
+}
+
+//returns true if every move a player could make puts them in check
+function everyMoveIsCheck(player){
 	var playersPieces = new Array();
 	//get all their pieces
 	for (var i = 1; i < 9; i++){
@@ -170,9 +185,8 @@ function checkMate(player){
 		}
 	}
 	//for each piece, test validity of moving to every spot on the board
-	//If it's valid, try applying that move, and see if the player is still in check
-	//If they aren't in check anymore, return false, because it's not a checkmate.
-	//If each move results in them still being in check, return true
+	//If it's valid, try applying that move, and see if the player is in check
+	//Return true if every one is check
 	for (var m = 0; m < playersPieces.length; m++){
 		for (var i = 1; i < 9; i++){
 			for (var j = 1; j < 9; j++){
@@ -193,13 +207,13 @@ function checkMate(player){
 	}
 	return true;
 }
+
 //applies the move on the board, flipping whose turn it is. Updates the king's global
 //position if necessary
 function applyMove(startPosition, endPosition){
 	
 	if (boardy.grid[startPosition.y][startPosition.x] instanceof King &&
 		((startPosition.x - endPosition.x === 2) || (startPosition.x - endPosition.x === -2))){
-		document.getElementById("info1").innerHTML="derpy4";
 		//castling
 		castleApplyMove(startPosition, endPosition);
 	} else {
@@ -812,6 +826,7 @@ function King(owner, position){
 		return false;
 	};
 }
+
 function Pawn(owner, position){
 	this.owner = owner;
 	this.position = position;
