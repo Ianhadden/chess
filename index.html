@@ -31,8 +31,8 @@
 <script>
 var boardy = new Board();
 printBoard(boardy);
-var wkPosition = new Position(1, 5);
-var bkPosition = new Position(8, 5);
+var wkPosition = boardy.grid[1][5].position;
+var bkPosition = boardy.grid[8][5].position;
 var stillGoing = true;
 
 // Triggered on key press. Calls getMoveInput() if enter was pressed
@@ -210,8 +210,7 @@ function everyMoveIsCheck(player){
 	return true;
 }
 
-//applies the move on the board, flipping whose turn it is. Updates the king's global
-//position if necessary
+//applies the move on the board, flipping whose turn it is.
 function applyMove(startPosition, endPosition){
 	
 	if (boardy.grid[startPosition.y][startPosition.x] instanceof King &&
@@ -223,22 +222,7 @@ function applyMove(startPosition, endPosition){
 		standardApplyMove(startPosition, endPosition);
 	}
 	
-	if (boardy.grid[endPosition.y][endPosition.x] instanceof King){
-		if (boardy.turn === "white"){
-			wkPosition.x = endPosition.x;
-			wkPosition.y = endPosition.y;
-		} else {
-			bkPosition.x = endPosition.x;
-			bkPosition.y = endPosition.y;
-		}
-	}
-	
-	if (boardy.turn === "white"){
-		boardy.turn = "black";
-	} else {
-		boardy.turn = "white";
-	}
-	//printBoard(boardy);
+	flipTurns();
 }
 
 //Called by applyMove() if the move is just an ordinary move
@@ -290,20 +274,15 @@ function undoMove(startPosition, endPosition, target){
 		standardUndoMove(startPosition, endPosition, target);
 	}
 	
+	flipTurns();
+}
+
+//switches whose turn it is
+function flipTurns(){
 	if (boardy.turn === "white"){
 		boardy.turn = "black";
 	} else {
 		boardy.turn = "white";
-	}
-	
-	if (boardy.grid[startPosition.y][startPosition.x] instanceof King){
-		if (boardy.turn === "white"){
-			wkPosition.x = startPosition.x;
-			wkPosition.y = startPosition.y;
-		} else {
-			bkPosition.x = startPosition.x;
-			bkPosition.y = startPosition.y;
-		}
 	}
 }
 
@@ -407,14 +386,9 @@ function getCoordsFromInput(stringInput){
 
 //prints the given board
 function printBoard(board){
-	document.getElementById("8").innerHTML = getBoardRow(board, 8);
-	document.getElementById("7").innerHTML = getBoardRow(board, 7);
-	document.getElementById("6").innerHTML = getBoardRow(board, 6);
-	document.getElementById("5").innerHTML = getBoardRow(board, 5);
-	document.getElementById("4").innerHTML = getBoardRow(board, 4);
-	document.getElementById("3").innerHTML = getBoardRow(board, 3);
-	document.getElementById("2").innerHTML = getBoardRow(board, 2);
-	document.getElementById("1").innerHTML = getBoardRow(board, 1);
+	for (var i = 8; i > 0; i--){
+		document.getElementById(i).innerHTML = getBoardRow(board, i);
+	}
 	document.getElementById("b").innerHTML = "<b>" + board.grid[0] + "</b>";
 }
 
