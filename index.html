@@ -28,12 +28,24 @@
 	
 	<p id="b2"></p>
 	
+	<p id="db1"></p>
+	<p id="db2"></p>
+	<p id="db3"></p>
+	<p id="db4"></p>
+	
 <script>
 var boardy = new Board();
 printBoard(boardy);
+//king positions. Important for checkmate tests and the like
 var wkPosition = boardy.grid[1][5].position;
 var bkPosition = boardy.grid[8][5].position;
+//en passant info
+//var wEnPassant = [false, false];
+///var bEnPassant = [false, false];
+var lastMoveWasEnPassant = false;
+
 var stillGoing = true;
+
 
 // Triggered on key press. Calls getMoveInput() if enter was pressed
 function handle(e){
@@ -91,22 +103,25 @@ function getMoveInput(){
 //stalemate, etc.
 function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 	var piece = boardy.grid[startPosition.y][startPosition.x];
-	var target = boardy.grid[endPosition.y][endPosition.x];
+	var target = getTarget(startPosition, endPosition);
+	//var target = boardy.grid[endPosition.y][endPosition.x];
 	var playerMakingMove = boardy.turn;
 	
 	//apply move, see if put self in check
 	applyMove(startPosition, endPosition);
 	var putSelfInCheck = playerInCheck(playerMakingMove);
-	
 	if (putSelfInCheck){
+		//confirm("derp1");
 		//if put self in check, undo move
 		undoMove(startPosition, endPosition, target);
 		document.getElementById("info1").innerHTML="Invalid Move, put's you in check";
 	} else {
+		//confirm("derp2");
 		//otherwise, don't undo, update stuff accordingly.
 		//see if we put the other person in check
 		document.getElementById("info1").innerHTML="Last move was " + moveText;
 		moveForm.elements["name"].value = "";
+		
 		
 		if (checkMate(boardy.turn)){
 			stillGoing = false;
@@ -125,14 +140,17 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 		} else {
 			document.getElementById("b2").innerHTML="";
 		}
+		
+		
 	}
 }
+
 
 // Checks if a move is valid or not based on owner and what sort of piece it is
 // A move which puts the moving player in check IS valid as defined by this function
 function checkMoveValidity(startPosition, endPosition){
 	var piece = boardy.grid[startPosition.y][startPosition.x];
-	var target = boardy.grid[endPosition.y][endPosition.x];
+	//var target = boardy.grid[endPosition.y][endPosition.x];
 	if (piece.owner !== boardy.turn || !piece.validMove(endPosition)){
 		return false;
 	}
@@ -195,7 +213,8 @@ function everyMoveIsCheck(player){
 				if (checkMoveValidity(playersPieces[m].position, new Position(i, j))){
 					var startPos = new Position(playersPieces[m].position.y, playersPieces[m].position.x);
 					var endPos = new Position(i, j);
-					var target = boardy.grid[endPos.y][endPos.x];
+					var target = getTarget(startPos, endPos);
+					//var target = boardy.grid[endPos.y][endPos.x];
 					applyMove(startPos, endPos);
 					if (!playerInCheck(player)){
 						undoMove(startPos, endPos, target);
@@ -212,14 +231,24 @@ function everyMoveIsCheck(player){
 
 //applies the move on the board, flipping whose turn it is.
 function applyMove(startPosition, endPosition){
-	
 	if (boardy.grid[startPosition.y][startPosition.x] instanceof King &&
 		((startPosition.x - endPosition.x === 2) || (startPosition.x - endPosition.x === -2))){
 		//castling
 		castleApplyMove(startPosition, endPosition);
+		lastMoveWasEnPassant = false;
+		
+	} else if (boardy.grid[startPosition.y][startPosition.x] instanceof Pawn &&
+				Math.abs(startPosition.y - endPosition.y) === 1 && 
+				Math.abs(startPosition.x - endPosition.x) === 1 &&
+				boardy.grid[endPosition.y][endPosition.x] instanceof Empty){
+		//en passant
+		enPassantApplyMove(startPosition, endPosition);
+		lastMoveWasEnPassant = true;
+		
 	} else {
 		//normal move
 		standardApplyMove(startPosition, endPosition);
+		lastMoveWasEnPassant = false;
 	}
 	
 	flipTurns();
@@ -239,6 +268,18 @@ function standardApplyMove(startPosition, endPosition){
 		movedPiece.hasMoved[0] = movedPiece.hasMoved[1];
 		movedPiece.hasMoved[1] = true;
 	}
+}
+
+//Called by applyMove() if the move is en passant
+function enPassantApplyMove(startPosition, endPosition){
+	var mover = boardy.grid[startPosition.y][startPosition.x].owner;
+	standardApplyMove(startPosition, endPosition);
+	if (mover === "white"){
+		standardApplyMove(startPosition, new Position(endPosition.y - 1, endPosition.x));
+	} else { // mover === "black"
+		standardApplyMove(startPosition, new Position(endPosition.y + 1, endPosition.x));
+	}
+	//boardy.grid[endPosition.y][endPosition.x].justEnPassanted = true;
 }
 
 //Called by applyMove() if the move is castling
@@ -269,6 +310,10 @@ function undoMove(startPosition, endPosition, target){
 		((startPosition.x - endPosition.x === 2) || (startPosition.x - endPosition.x === -2))){
 		//castling
 		castleUndoMove(startPosition, endPosition, target);
+	} else if (lastMoveWasEnPassant){
+		//en passant
+		enPassantUndoMove(startPosition, endPosition, target);
+		lastMoveWasEnPassant = false;
 	} else {
 		//normal move
 		standardUndoMove(startPosition, endPosition, target);
@@ -286,6 +331,29 @@ function flipTurns(){
 	}
 }
 
+//returns the target of a given move. This will almost always be the piece
+//in position endPosition.y, endPosition.x
+//The exception is when the move is en passant
+function getTarget(startPosition, endPosition){
+	if (boardy.grid[startPosition.y][startPosition.x].owner === "black" && 
+		boardy.grid[endPosition.y][endPosition.x].owner === "empty" &&
+		(endPosition.y + 1 < 9) &&
+		boardy.grid[endPosition.y + 1][endPosition.x].owner === "white" &&
+		boardy.grid[endPosition.y + 1][endPosition.x] instanceof Pawn &&
+		boardy.grid[endPosition.y + 1][endPosition.x].justDoubleJumped === true){
+			return boardy.grid[endPosition.y + 1][endPosition.x];
+	}
+	if (boardy.grid[startPosition.y][startPosition.x].owner === "white" && 
+		boardy.grid[endPosition.y][endPosition.x].owner === "empty" &&
+		(endPosition.y - 1 > 0) && 
+		boardy.grid[endPosition.y - 1][endPosition.x].owner === "black" &&
+		boardy.grid[endPosition.y - 1][endPosition.x] instanceof Pawn &&
+		boardy.grid[endPosition.y - 1][endPosition.x].justDoubleJumped === true){
+			return boardy.grid[endPosition.y - 1][endPosition.x];
+	}
+	return boardy.grid[endPosition.y][endPosition.x];
+}
+
 //Called by undoMove if the move was just a ordinary move
 function standardUndoMove(startPosition, endPosition, target){
 	boardy.grid[startPosition.y][startPosition.x] = boardy.grid[endPosition.y][endPosition.x];
@@ -297,6 +365,17 @@ function standardUndoMove(startPosition, endPosition, target){
 	if (unMovedPiece instanceof King || unMovedPiece instanceof Rook){
 		unMovedPiece.hasMoved[1] = unMovedPiece.hasMoved[0];
 	}
+}
+
+//Called by undoMove if if was an en passant move
+function enPassantUndoMove(startPosition, endPosition, target){
+	var mover = boardy.grid[endPosition.y][endPosition.x].owner;
+	if (mover === "white"){
+		standardUndoMove(startPosition, new Position(endPosition.y - 1, endPosition.x), target);
+	} else { //mover === "black"
+		standardUndoMove(startPosition, new Position(endPosition.y + 1, endPosition.x), target);
+	}
+	standardUndoMove(startPosition, endPosition, new Empty("empty", new Position(endPosition.y, endPosition.x)));
 }
 
 //Called by undoMove if the move was a castling move
@@ -812,6 +891,8 @@ function King(owner, position){
 function Pawn(owner, position){
 	this.owner = owner;
 	this.position = position;
+	this.justDoubleJumped = true;
+	this.justEnPassanted = false;
 	this.validMove = function(endPosition){
 		if (owner === "white"){
 			if (position.x === endPosition.x){
@@ -835,6 +916,12 @@ function Pawn(owner, position){
 				//attack move
 				
 				if (boardy.grid[endPosition.y][endPosition.x].owner === "black"){
+					return true;
+				} else if (boardy.grid[endPosition.y][endPosition.x].owner === "empty" &&
+							boardy.grid[endPosition.y - 1][endPosition.x].owner === "black" &&
+							boardy.grid[endPosition.y - 1][endPosition.x] instanceof Pawn &&
+							boardy.grid[endPosition.y - 1][endPosition.x].justDoubleJumped === true){
+					//en passant
 					return true;
 				} else {
 					return false;
@@ -863,21 +950,25 @@ function Pawn(owner, position){
 			} else if ((position.y - 1 === endPosition.y && position.x - 1 === endPosition.x) ||
 						(position.y - 1 === endPosition.y && position.x + 1 === endPosition.x)){
 				//attack move
-				
 				if (boardy.grid[endPosition.y][endPosition.x].owner === "white"){
+					return true;
+				} else if (boardy.grid[endPosition.y][endPosition.x].owner === "empty" &&
+							boardy.grid[endPosition.y + 1][endPosition.x].owner === "white" &&
+							boardy.grid[endPosition.y + 1][endPosition.x] instanceof Pawn &&
+							boardy.grid[endPosition.y + 1][endPosition.x].justDoubleJumped === true){
+					//en passant
 					return true;
 				} else {
 					return false;
 				}
-			} else{
+			} else {
 				return false;
 			}
 		}
 	};
 }
 
-function Empty(owner, board, position){
-	this.board = board;
+function Empty(owner, position){
 	this.owner = owner;
 	this.position = position;
 	this.validMove = function(endPosition){
