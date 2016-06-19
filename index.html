@@ -36,12 +36,13 @@
 <script>
 var boardy = new Board();
 printBoard(boardy);
+
 //king positions. Important for checkmate tests and the like
 var wkPosition = boardy.grid[1][5].position;
 var bkPosition = boardy.grid[8][5].position;
+
 //en passant info
-//var wEnPassant = [false, false];
-///var bEnPassant = [false, false];
+var doubleJumpers = [false, false]; //[previousState, currentState]
 var lastMoveWasEnPassant = false;
 
 var stillGoing = true;
@@ -122,7 +123,6 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 		document.getElementById("info1").innerHTML="Last move was " + moveText;
 		moveForm.elements["name"].value = "";
 		
-		
 		if (checkMate(boardy.turn)){
 			stillGoing = false;
 			document.getElementById("b2").innerHTML="CHECKMATE!";
@@ -140,8 +140,6 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 		} else {
 			document.getElementById("b2").innerHTML="";
 		}
-		
-		
 	}
 }
 
@@ -244,7 +242,6 @@ function applyMove(startPosition, endPosition){
 		//en passant
 		enPassantApplyMove(startPosition, endPosition);
 		lastMoveWasEnPassant = true;
-		
 	} else {
 		//normal move
 		standardApplyMove(startPosition, endPosition);
@@ -252,6 +249,15 @@ function applyMove(startPosition, endPosition){
 	}
 	
 	flipTurns();
+	
+	//update double jump info
+	doubleJumpers[0] = doubleJumpers[1];
+	if (boardy.grid[endPosition.y][endPosition.x] instanceof Pawn &&
+		Math.abs(startPosition.y - endPosition.y) === 2){
+		doubleJumpers[1] = boardy.grid[endPosition.y][endPosition.x];
+	} else {
+		doubleJumpers[1] = false;
+	}
 }
 
 //Called by applyMove() if the move is just an ordinary move
@@ -320,6 +326,9 @@ function undoMove(startPosition, endPosition, target){
 	}
 	
 	flipTurns();
+	
+	//update double jump info
+	doubleJumpers[1] = doubleJumpers[0];
 }
 
 //switches whose turn it is
@@ -340,7 +349,7 @@ function getTarget(startPosition, endPosition){
 		(endPosition.y + 1 < 9) &&
 		boardy.grid[endPosition.y + 1][endPosition.x].owner === "white" &&
 		boardy.grid[endPosition.y + 1][endPosition.x] instanceof Pawn &&
-		boardy.grid[endPosition.y + 1][endPosition.x].justDoubleJumped === true){
+		boardy.grid[endPosition.y + 1][endPosition.x] === doubleJumpers[1]){
 			return boardy.grid[endPosition.y + 1][endPosition.x];
 	}
 	if (boardy.grid[startPosition.y][startPosition.x].owner === "white" && 
@@ -348,7 +357,7 @@ function getTarget(startPosition, endPosition){
 		(endPosition.y - 1 > 0) && 
 		boardy.grid[endPosition.y - 1][endPosition.x].owner === "black" &&
 		boardy.grid[endPosition.y - 1][endPosition.x] instanceof Pawn &&
-		boardy.grid[endPosition.y - 1][endPosition.x].justDoubleJumped === true){
+		boardy.grid[endPosition.y - 1][endPosition.x] === doubleJumpers[1]){
 			return boardy.grid[endPosition.y - 1][endPosition.x];
 	}
 	return boardy.grid[endPosition.y][endPosition.x];
@@ -891,8 +900,6 @@ function King(owner, position){
 function Pawn(owner, position){
 	this.owner = owner;
 	this.position = position;
-	this.justDoubleJumped = true;
-	this.justEnPassanted = false;
 	this.validMove = function(endPosition){
 		if (owner === "white"){
 			if (position.x === endPosition.x){
@@ -920,7 +927,7 @@ function Pawn(owner, position){
 				} else if (boardy.grid[endPosition.y][endPosition.x].owner === "empty" &&
 							boardy.grid[endPosition.y - 1][endPosition.x].owner === "black" &&
 							boardy.grid[endPosition.y - 1][endPosition.x] instanceof Pawn &&
-							boardy.grid[endPosition.y - 1][endPosition.x].justDoubleJumped === true){
+							boardy.grid[endPosition.y - 1][endPosition.x] === doubleJumpers[1]){
 					//en passant
 					return true;
 				} else {
@@ -955,7 +962,7 @@ function Pawn(owner, position){
 				} else if (boardy.grid[endPosition.y][endPosition.x].owner === "empty" &&
 							boardy.grid[endPosition.y + 1][endPosition.x].owner === "white" &&
 							boardy.grid[endPosition.y + 1][endPosition.x] instanceof Pawn &&
-							boardy.grid[endPosition.y + 1][endPosition.x].justDoubleJumped === true){
+							boardy.grid[endPosition.y + 1][endPosition.x] === doubleJumpers[1]){
 					//en passant
 					return true;
 				} else {
