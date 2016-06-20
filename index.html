@@ -112,12 +112,10 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 	applyMove(startPosition, endPosition);
 	var putSelfInCheck = playerInCheck(playerMakingMove);
 	if (putSelfInCheck){
-		//confirm("derp1");
 		//if put self in check, undo move
 		undoMove(startPosition, endPosition, target);
 		document.getElementById("info1").innerHTML="Invalid Move, put's you in check";
 	} else {
-		//confirm("derp2");
 		//otherwise, don't undo, update stuff accordingly.
 		//see if we put the other person in check
 		document.getElementById("info1").innerHTML="Last move was " + moveText;
@@ -148,7 +146,6 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 // A move which puts the moving player in check IS valid as defined by this function
 function checkMoveValidity(startPosition, endPosition){
 	var piece = boardy.grid[startPosition.y][startPosition.x];
-	//var target = boardy.grid[endPosition.y][endPosition.x];
 	if (piece.owner !== boardy.turn || !piece.validMove(endPosition)){
 		return false;
 	}
@@ -212,7 +209,6 @@ function everyMoveIsCheck(player){
 					var startPos = new Position(playersPieces[m].position.y, playersPieces[m].position.x);
 					var endPos = new Position(i, j);
 					var target = getTarget(startPos, endPos);
-					//var target = boardy.grid[endPos.y][endPos.x];
 					applyMove(startPos, endPos);
 					if (!playerInCheck(player)){
 						undoMove(startPos, endPos, target);
@@ -230,7 +226,7 @@ function everyMoveIsCheck(player){
 //applies the move on the board, flipping whose turn it is.
 function applyMove(startPosition, endPosition){
 	if (boardy.grid[startPosition.y][startPosition.x] instanceof King &&
-		((startPosition.x - endPosition.x === 2) || (startPosition.x - endPosition.x === -2))){
+		Math.abs(startPosition.x - endPosition.x) === 2){
 		//castling
 		castleApplyMove(startPosition, endPosition);
 		lastMoveWasEnPassant = false;
@@ -285,7 +281,6 @@ function enPassantApplyMove(startPosition, endPosition){
 	} else { // mover === "black"
 		standardApplyMove(startPosition, new Position(endPosition.y + 1, endPosition.x));
 	}
-	//boardy.grid[endPosition.y][endPosition.x].justEnPassanted = true;
 }
 
 //Called by applyMove() if the move is castling
@@ -313,7 +308,7 @@ function castleApplyMove(startPosition, endPosition){
 function undoMove(startPosition, endPosition, target){
 	
 	if (boardy.grid[endPosition.y][endPosition.x] instanceof King &&
-		((startPosition.x - endPosition.x === 2) || (startPosition.x - endPosition.x === -2))){
+		Math.abs(startPosition.x - endPosition.x) === 2){
 		//castling
 		castleUndoMove(startPosition, endPosition, target);
 	} else if (lastMoveWasEnPassant){
@@ -440,36 +435,11 @@ function getCoordsFromInput(stringInput){
 		default:
 			numX = -1;
 	}
-	switch (stringY) {
-		case "1":
-			numY = 1;
-			break;
-		case "2":
-			numY = 2;
-			break;
-		case "3":
-			numY = 3;
-			break;
-		case "4":
-			numY = 4;
-			break;
-		case "5":
-			numY = 5;
-			break;
-		case "6":
-			numY = 6;
-			break;
-		case "7":
-			numY = 7;
-			break;
-		case "8":
-			numY = 8;
-			break;
-		default:
-			numY = -1;
+	numY = parseInt(stringY);
+	if (isNaN(numY) || numY < 1 || numY > 8){
+		numY = -1;
 	}
-	var position = new Position(numY, numX);
-	return position;
+	return new Position(numY, numX);
 }
 
 //prints the given board
@@ -655,8 +625,8 @@ function Horse(owner, position){
 	this.validMove = function(endPosition){
 		var xDif = endPosition.x - position.x;
 		var yDif = endPosition.y - position.y;
-		if (((yDif === 2 || yDif === -2) && (xDif === 1 || xDif === -1))
-			|| ((yDif === 1 || yDif === -1) && (xDif === 2 || xDif === -2))){
+		if ((Math.abs(yDif) === 2 && Math.abs(xDif) === 1)
+			|| (Math.abs(yDif) === 1 && Math.abs(xDif) === 2)){
 			if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
 				return true;
 			}
@@ -853,11 +823,11 @@ function Queen(owner, position){
 function King(owner, position){
 	this.owner = owner;
 	this.position = position;
-	this.hasMoved = [false, false];
+	this.hasMoved = [false, false]; //[previousState, currentState]
 	this.validMove = function(endPosition){
 		var xDif = endPosition.x - position.x;
 		var yDif = endPosition.y - position.y;
-		if (yDif === 0 && (xDif === 2 || xDif === -2)){
+		if (yDif === 0 && Math.abs(xDif) === 2){
 			//castling
 			var rook;
 			if (xDif === 2){
@@ -881,10 +851,10 @@ function King(owner, position){
 			return true;
 		}
 		
-		if (!(xDif === -1 || xDif === 1 || xDif === 0)){
+		if (Math.abs(xDif) > 1){
 			return false;
 		}
-		if (!(yDif === -1 || yDif === 1 || yDif === 0)){
+		if (Math.abs(yDif) > 1){
 			return false;
 		}
 		if (xDif === 0 && yDif === 0){
