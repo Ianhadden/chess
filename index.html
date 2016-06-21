@@ -229,9 +229,6 @@ function draw(player){
 			}
 		}
 	}
-	document.getElementById("db1").innerHTML = total;
-	document.getElementById("db2").innerHTML = bishops.length;
-	document.getElementById("db3").innerHTML = horses;
 	//just kings
 	if (total === 2){
 		return true;
@@ -469,7 +466,6 @@ function castleUndoMove(startPosition, endPosition, target){
 		
 	}
 }
-
 
 //Sets things up for pawn promotion input, if applicable
 function pawnPromotion(endPosition){
@@ -953,13 +949,28 @@ function King(owner, position){
 		var yDif = endPosition.y - position.y;
 		if (yDif === 0 && Math.abs(xDif) === 2){
 			//castling
+			
+			if (playerInCheck(boardy.turn)){
+				return false;
+			}
 			var rook;
+			var spaceBetweenSafe = true;
 			if (xDif === 2){
 				rook = boardy.grid[position.y][position.x + 3];
 				if (!(boardy.grid[position.y][position.x + 1] instanceof Empty) ||
 					!(boardy.grid[position.y][position.x + 2] instanceof Empty)){
 						return false;
-					}
+				}
+				var pos0 = new Position(position.y, position.x);
+				var pos1 = new Position(position.y, position.x + 1);
+				standardApplyMove(pos0, pos1);
+				if (playerInCheck(boardy.turn)){
+					spaceBetweenSafe = false;
+				}
+				standardUndoMove(pos0, pos1, new Empty("empty", pos1));
+				if (!spaceBetweenSafe){
+					return false;
+				}
 			} else { //xDif === -2
 				rook = boardy.grid[position.y][position.x - 4];
 				if (!(boardy.grid[position.y ][position.x - 1] instanceof Empty) ||
@@ -967,14 +978,23 @@ function King(owner, position){
 					!(boardy.grid[position.y][position.x - 3] instanceof Empty)){
 					return false;
 				}
+				var pos0 = new Position(position.y, position.x);
+				var pos1 = new Position(position.y, position.x - 1);
+				standardApplyMove(pos0, pos1);
+				if (playerInCheck(boardy.turn)){
+					spaceBetweenSafe = false;
+				}
+				standardUndoMove(pos0, pos1, new Empty("empty", pos1));
+				if (!spaceBetweenSafe){
+					return false;
+				}
 			}
-
 			if (!(rook instanceof Rook) || !(rook.owner === owner) || rook.hasMoved[1] || this.hasMoved[1]){
 				return false;
 			}
 			return true;
 		}
-		
+		//normal move
 		if (Math.abs(xDif) > 1){
 			return false;
 		}
