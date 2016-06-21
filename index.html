@@ -4,11 +4,11 @@
 	<link rel="stylesheet" type="text/css" href="main.css">
 </head>
 <body>
-	
+
 	<center>
 	<font face="Courier New, serif" size="6">
 	<form id="moveInput">
-	Move: <input name="name" type="text" size="20" onkeypress="handle(event)">
+	Move: <input name="name" type="text" size="20" onkeypress="handleMoveInput(event)">
 	</form>
 	</font>
 	</center>
@@ -45,11 +45,16 @@ var bkPosition = boardy.grid[8][5].position;
 var doubleJumpers = [false, false]; //[previousState, currentState]
 var lastMoveWasEnPassant = false;
 
+//pawn promotion info
+var pawnPosition;
+var promotingPawn = false;
+var savedMoveText;
+
 var stillGoing = true;
 
 
 // Triggered on key press. Calls getMoveInput() if enter was pressed
-function handle(e){
+function handleMoveInput(e){
 	if(e.keyCode === 13){
 		getMoveInput();
 		e.preventDefault();
@@ -83,11 +88,7 @@ function getMoveInput(){
 					validMoveProcedure(startPosition, endPosition, moveForm, moveText);
 					
 					printBoard(boardy);
-					if ((boardy.turn === "white") && stillGoing){
-						document.getElementById("info2").innerHTML="Lowercase's move";
-					} else if (stillGoing){
-						document.getElementById("info2").innerHTML="Uppercase's move";
-					}
+					updateInfo2Display();
 					
 				} else {
 					document.getElementById("info1").innerHTML="Invalid Move";
@@ -96,6 +97,17 @@ function getMoveInput(){
 		}
 	}
 	return false;
+}
+
+//Updates the info2 display
+function updateInfo2Display(){
+	if (promotingPawn && stillGoing){
+		document.getElementById("info2").innerHTML="Choose piece";
+	} else if ((boardy.turn === "white") && stillGoing){
+		document.getElementById("info2").innerHTML="Lowercase's move";
+	} else if (stillGoing){
+		document.getElementById("info2").innerHTML="Uppercase's move";
+	}
 }
 
 //Applies a move (with the precondition that that move is valid). Once applied,
@@ -118,29 +130,38 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 	} else {
 		//otherwise, don't undo, update stuff accordingly.
 		//see if we put the other person in check
-		document.getElementById("info1").innerHTML="Last move was " + moveText;
-		moveForm.elements["name"].value = "";
-		
-		if (checkMate(boardy.turn)){
-			stillGoing = false;
-			document.getElementById("b2").innerHTML="CHECKMATE!";
-			if (boardy.turn === "white"){
-				document.getElementById("info2").innerHTML = "Uppercase wins!";
-			} else {
-				document.getElementById("info2").innerHTML = "Lowercase wins!";
-			}
-		} else if (stalemate(boardy.turn)){
-			stillGoing = false;
-			document.getElementById("b2").innerHTML="Stalemate!";
-			document.getElementById("info2").innerHTML = "It's a draw";
-		} else if (playerInCheck(boardy.turn)){
-			document.getElementById("b2").innerHTML="CHECK!";		
+		pawnPromotion(endPosition);
+		if (promotingPawn){
+			document.getElementById("info1").innerHTML="<br>";
+			savedMoveText = moveText;
 		} else {
-			document.getElementById("b2").innerHTML="";
+			document.getElementById("info1").innerHTML="Last move was " + moveText;
+			moveForm.elements["name"].value = "";
 		}
+		checkEndGameConditions();
 	}
 }
 
+//Checks for checkmates, stalemates, and checks. Updates things appropriately
+function checkEndGameConditions(){
+	if (checkMate(boardy.turn)){
+		stillGoing = false;
+		document.getElementById("b2").innerHTML="CHECKMATE!";
+		if (boardy.turn === "white"){
+			document.getElementById("info2").innerHTML = "Uppercase wins!";
+		} else {
+			document.getElementById("info2").innerHTML = "Lowercase wins!";
+		}
+	} else if (stalemate(boardy.turn)){
+		stillGoing = false;
+		document.getElementById("b2").innerHTML="Stalemate!";
+		document.getElementById("info2").innerHTML = "It's a draw";
+	} else if (playerInCheck(boardy.turn)){
+		document.getElementById("b2").innerHTML="CHECK!";		
+	} else {
+		document.getElementById("b2").innerHTML="";
+	}
+}
 
 // Checks if a move is valid or not based on owner and what sort of piece it is
 // A move which puts the moving player in check IS valid as defined by this function
@@ -398,6 +419,61 @@ function castleUndoMove(startPosition, endPosition, target){
 						new Posiion(rook.position.y, rook.position.x),
 						new Empty("empty", new Position(rook.position.y, rook.position.x)));
 		
+	}
+}
+
+
+//Sets things up for pawn promotion input, if applicable
+function pawnPromotion(endPosition){
+	if ((endPosition.y === 1 || endPosition.y === 8) && boardy.grid[endPosition.y][endPosition.x] instanceof Pawn){
+		document.getElementById("moveInput").innerHTML =
+		'Piece: <input name="name" type="text" size="20" onkeypress="handlePawnPromotionInput(event)">';
+		document.getElementById("moveInput").name.focus();
+		pawnPosition = endPosition;
+		promotingPawn = true;
+	}
+	
+}
+
+// Triggered on key press. Calls getPawnPromotionInput() if enter was pressed
+function handlePawnPromotionInput(e){
+	if(e.keyCode === 13){
+		getPawnPromotionInput();
+		e.preventDefault();
+	}
+	return false;
+}
+
+//Parses input for pawn promotion. Promotes if input is valid
+function getPawnPromotionInput(){
+	if (stillGoing){
+		var pawnForm = document.getElementById("moveInput");
+		var pawnText = pawnForm.elements["name"].value;
+		if (pawnText === "q" || pawnText === "Q" || pawnText === "b" ||
+			pawnText === "B" || pawnText === "r" || pawnText === "R" ||
+			pawnText === "h" || pawnText === "H"){
+			
+			var pawn = boardy.grid[pawnPosition.y][pawnPosition.x];
+			if (pawnText === "q" || pawnText === "Q"){
+				boardy.grid[pawnPosition.y][pawnPosition.x] = new Queen(pawn.owner, pawn.position);
+			} else if (pawnText === "b" || pawnText === "B"){
+				boardy.grid[pawnPosition.y][pawnPosition.x] = new Bishop(pawn.owner, pawn.position);
+			} else if (pawnText === "r" || pawnText === "R"){
+				boardy.grid[pawnPosition.y][pawnPosition.x] = new Rook(pawn.owner, pawn.position);
+			} else if (pawnText === "h" || pawnText === "H"){
+				boardy.grid[pawnPosition.y][pawnPosition.x] = new Horse(pawn.owner, pawn.position);	
+			}
+			document.getElementById("moveInput").innerHTML =
+				'Move: <input name="name" type="text" size="20" onkeypress="handleMoveInput(event)">';
+			document.getElementById("moveInput").name.focus();
+			printBoard(boardy);
+			document.getElementById("info1").innerHTML="Last move was " + savedMoveText;
+			promotingPawn = false;
+			checkEndGameConditions();
+			updateInfo2Display();
+		} else {
+			document.getElementById("info1").innerHTML = "Invalid Piece";
+		}
 	}
 }
 
@@ -953,17 +1029,5 @@ function Empty(owner, position){
 	};
 }
 </script>
-
-<!--
-	<p id="8">8   R H B Q K B H R</p>
-	<p id="7">7   P P P P P P P P</p>
-	<p id="6">6   - - - - - - - -</p>
-	<p id="5">5   - - - - - - - -</p>
-	<p id="4">4   - - - - - - - -</p>
-	<p id="3">3   - - - - - - - -</p>
-	<p id="2">2   p p p p p p p p</p>
-	<p id="1">1   r h b q k b h r</p>
-	<p id="b">0   a b c d e f g h</p>
--->
 </body>
 </html>
