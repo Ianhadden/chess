@@ -152,10 +152,10 @@ function checkEndGameConditions(){
 		} else {
 			document.getElementById("info2").innerHTML = "Lowercase wins!";
 		}
-	} else if (stalemate(boardy.turn)){
+	} else if (draw(boardy.turn)){
 		stillGoing = false;
-		document.getElementById("b2").innerHTML="Stalemate!";
-		document.getElementById("info2").innerHTML = "It's a draw";
+		document.getElementById("b2").innerHTML="";
+		document.getElementById("info2").innerHTML = "It's a draw!";
 	} else if (playerInCheck(boardy.turn)){
 		document.getElementById("b2").innerHTML="CHECK!";		
 	} else {
@@ -199,14 +199,62 @@ function playerInCheck(player){
 	boardy.turn = correctTurn;
 	return false;
 }
+
 //returns true if the given player has lost
 function checkMate(player){
 	return (playerInCheck(player) && everyMoveIsCheck(player));
 }
 
-//returns true if the player is in a stalemate position
+//returns true if the player is in a stalemate position (subset of draw)
 function stalemate(player){
 	return (!(playerInCheck(player)) && everyMoveIsCheck(player));
+}
+
+//returns true if the game is a draw based on stalemate or
+//impossibility of checkmate
+function draw(player){
+	var total = 0;
+	var bishops = new Array();
+	var horses = 0;
+	for (var i = 1; i < 9; i++){
+		for (var j = 1; j < 9; j++){
+			if (boardy.grid[i][j].owner !== "empty"){
+				total++;
+				if (boardy.grid[i][j] instanceof Bishop){
+					bishops.push(boardy.grid[i][j]);
+				}
+				if (boardy.grid[i][j] instanceof Horse){
+					horses++;
+				}
+			}
+		}
+	}
+	document.getElementById("db1").innerHTML = total;
+	document.getElementById("db2").innerHTML = bishops.length;
+	document.getElementById("db3").innerHTML = horses;
+	//just kings
+	if (total === 2){
+		return true;
+	}
+	//kings and one bishop or horse
+	if (total === 3 && (bishops.length === 1 || horses === 1)){
+		return true;
+	}
+	//kings and multiple bishops, all on the same color square
+	if (total - 2 === bishops.length){
+		var allSame = true;
+		var color = (bishops[0].position.x + bishops[0].position.y) % 2;
+		for (var i = 1; i < bishops.length; i++){
+			if ((bishops[i].position.x + bishops[i].position.y) % 2 !== color){
+				allSame = false;
+				break;
+			}
+		}
+		if (allSame){
+			return true;
+		}
+	}
+	return stalemate(player);
 }
 
 //returns true if every move a player could make puts them in check
