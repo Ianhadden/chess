@@ -25,14 +25,8 @@
 	<p id="2"></p>
 	<p id="1"></p>
 	<p id="b"></p>
-	
 	<p id="b2"></p>
-	
-	<p id="db1"></p>
-	<p id="db2"></p>
-	<p id="db3"></p>
-	<p id="db4"></p>
-	
+
 <script>
 var boardy = new Board();
 printBoard(boardy);
@@ -68,7 +62,7 @@ function handleMoveInput(e){
 function getMoveInput(){
 	if (stillGoing){
 		var moveForm = document.getElementById("moveInput");
-		var moveText = moveForm.elements["name"].value;
+		var moveText = moveForm.elements["name"].value.toLowerCase();
 		//check for correct string format
 		if (moveText.length !== 5|| moveText.substring(2, 3) !== " "){
 			document.getElementById("info1").innerHTML="Invalid command";
@@ -392,38 +386,6 @@ function undoMove(startPosition, endPosition, target){
 	doubleJumpers[1] = doubleJumpers[0];
 }
 
-//switches whose turn it is
-function flipTurns(){
-	if (boardy.turn === "white"){
-		boardy.turn = "black";
-	} else {
-		boardy.turn = "white";
-	}
-}
-
-//returns the target of a given move. This will almost always be the piece
-//in position endPosition.y, endPosition.x
-//The exception is when the move is en passant
-function getTarget(startPosition, endPosition){
-	if (boardy.grid[startPosition.y][startPosition.x].owner === "black" && 
-		boardy.grid[endPosition.y][endPosition.x].owner === "empty" &&
-		(endPosition.y + 1 < 9) &&
-		boardy.grid[endPosition.y + 1][endPosition.x].owner === "white" &&
-		boardy.grid[endPosition.y + 1][endPosition.x] instanceof Pawn &&
-		boardy.grid[endPosition.y + 1][endPosition.x] === doubleJumpers[1]){
-			return boardy.grid[endPosition.y + 1][endPosition.x];
-	}
-	if (boardy.grid[startPosition.y][startPosition.x].owner === "white" && 
-		boardy.grid[endPosition.y][endPosition.x].owner === "empty" &&
-		(endPosition.y - 1 > 0) && 
-		boardy.grid[endPosition.y - 1][endPosition.x].owner === "black" &&
-		boardy.grid[endPosition.y - 1][endPosition.x] instanceof Pawn &&
-		boardy.grid[endPosition.y - 1][endPosition.x] === doubleJumpers[1]){
-			return boardy.grid[endPosition.y - 1][endPosition.x];
-	}
-	return boardy.grid[endPosition.y][endPosition.x];
-}
-
 //Called by undoMove if the move was just a ordinary move
 function standardUndoMove(startPosition, endPosition, target){
 	boardy.grid[startPosition.y][startPosition.x] = boardy.grid[endPosition.y][endPosition.x];
@@ -467,6 +429,38 @@ function castleUndoMove(startPosition, endPosition, target){
 	}
 }
 
+//switches whose turn it is
+function flipTurns(){
+	if (boardy.turn === "white"){
+		boardy.turn = "black";
+	} else {
+		boardy.turn = "white";
+	}
+}
+
+//returns the target of a given move. This will almost always be the piece
+//in position endPosition.y, endPosition.x
+//The exception is when the move is en passant
+function getTarget(startPosition, endPosition){
+	if (boardy.grid[startPosition.y][startPosition.x].owner === "black" && 
+		boardy.grid[endPosition.y][endPosition.x].owner === "empty" &&
+		(endPosition.y + 1 < 9) &&
+		boardy.grid[endPosition.y + 1][endPosition.x].owner === "white" &&
+		boardy.grid[endPosition.y + 1][endPosition.x] instanceof Pawn &&
+		boardy.grid[endPosition.y + 1][endPosition.x] === doubleJumpers[1]){
+			return boardy.grid[endPosition.y + 1][endPosition.x];
+	}
+	if (boardy.grid[startPosition.y][startPosition.x].owner === "white" && 
+		boardy.grid[endPosition.y][endPosition.x].owner === "empty" &&
+		(endPosition.y - 1 > 0) && 
+		boardy.grid[endPosition.y - 1][endPosition.x].owner === "black" &&
+		boardy.grid[endPosition.y - 1][endPosition.x] instanceof Pawn &&
+		boardy.grid[endPosition.y - 1][endPosition.x] === doubleJumpers[1]){
+			return boardy.grid[endPosition.y - 1][endPosition.x];
+	}
+	return boardy.grid[endPosition.y][endPosition.x];
+}
+
 //Sets things up for pawn promotion input, if applicable
 function pawnPromotion(endPosition){
 	if ((endPosition.y === 1 || endPosition.y === 8) && boardy.grid[endPosition.y][endPosition.x] instanceof Pawn){
@@ -492,19 +486,20 @@ function handlePawnPromotionInput(e){
 function getPawnPromotionInput(){
 	if (stillGoing){
 		var pawnForm = document.getElementById("moveInput");
-		var pawnText = pawnForm.elements["name"].value;
-		if (pawnText === "q" || pawnText === "Q" || pawnText === "b" ||
-			pawnText === "B" || pawnText === "r" || pawnText === "R" ||
-			pawnText === "h" || pawnText === "H"){
+		var pawnText = pawnForm.elements["name"].value.toLowerCase();
+		if (pawnText === "q" || pawnText === "queen" ||
+			pawnText === "b" || pawnText === "bishop" ||
+			pawnText === "r" || pawnText === "rook" ||
+			pawnText === "h" || pawnText === "horse" || pawnText === "knight"){
 			
 			var pawn = boardy.grid[pawnPosition.y][pawnPosition.x];
-			if (pawnText === "q" || pawnText === "Q"){
+			if (pawnText === "q" || pawnText === "queen"){
 				boardy.grid[pawnPosition.y][pawnPosition.x] = new Queen(pawn.owner, pawn.position);
-			} else if (pawnText === "b" || pawnText === "B"){
+			} else if (pawnText === "b" || pawnText === "bishop"){
 				boardy.grid[pawnPosition.y][pawnPosition.x] = new Bishop(pawn.owner, pawn.position);
-			} else if (pawnText === "r" || pawnText === "R"){
+			} else if (pawnText === "r" || pawnText === "rook"){
 				boardy.grid[pawnPosition.y][pawnPosition.x] = new Rook(pawn.owner, pawn.position);
-			} else if (pawnText === "h" || pawnText === "H"){
+			} else if (pawnText === "h" || pawnText === "horse" || pawnText === "knight"){
 				boardy.grid[pawnPosition.y][pawnPosition.x] = new Horse(pawn.owner, pawn.position);	
 			}
 			document.getElementById("moveInput").innerHTML =
