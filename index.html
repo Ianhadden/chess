@@ -582,33 +582,20 @@ function getBoardRow(board, row){
 
 //Creates a new board, initialized with pieces in starting positions
 function Board(){
+	this.turn = "white";
 	this.grid = new Array();
 	this.grid[0] = "0 a b c d e f g h";
-	this.grid[1] = new Array();
-	this.grid[1][0] = 1;
+	for (var i = 1; i < 9; i++){
+		this.grid[i] = new Array();
+		this.grid[i][0] = i;
+	}
 	fillRowWithPieces("white", 1, this);
-	this.grid[2] = new Array();
-	this.grid[2][0] = 2;
 	fillRowWithPawns("white", 2, this);
-	this.grid[3] = new Array();
-	this.grid[3][0] = 3;
-	fillRowWithEmpty(3, this);
-	this.grid[4] = new Array();
-	this.grid[4][0] = 4;
-	fillRowWithEmpty(4, this);
-	this.grid[5] = new Array();
-	this.grid[5][0] = 5;
-	fillRowWithEmpty(5, this);
-	this.grid[6] = new Array();
-	this.grid[6][0] = 3;
-	fillRowWithEmpty(6, this);
-	this.grid[7] = new Array();
-	this.grid[7][0] = 7;
+	for (var i = 3; i < 7; i++){
+		fillRowWithEmpty(i, this);
+	}
 	fillRowWithPawns("black", 7, this);
-	this.grid[8] = new Array();
-	this.grid[8][0] = 8;
 	fillRowWithPieces("black", 8, this);
-	this.turn = "white";
 }
 
 //Fills the given row on the given board with Pawns belonging to the given owner
@@ -641,7 +628,7 @@ function fillRowWithPieces(owner, row, board){
 //Takes in a piece object and returns how that piece should be displayed as a string
 function getDisplay(piece){
 	var ret;
-	if (piece instanceof Empty){ //piece.owner
+	if (piece instanceof Empty){
 		ret = "-";
 	} else if (piece instanceof Rook){
 		ret = "r";
@@ -656,7 +643,7 @@ function getDisplay(piece){
 	} else if (piece instanceof Pawn){
 		ret = "p";
 	} else {
-		ret = "v";
+		ret = "v"; //indicating an error
 	}
 	if (piece.owner === "black"){
 		ret = ret.toUpperCase();
@@ -670,75 +657,84 @@ function Position(y, x){
 	this.y = y;
 }
 
+//Rook constructor
 function Rook(owner, position){
 	this.owner = owner;
 	this.position = position;
 	this.hasMoved = [false, false];
 	this.validMove = function(endPosition){
-		if (position.x === endPosition.x){
-		//vertical movement
-		
-			var yDif = endPosition.y - position.y;
-			if (yDif > 0){
-				//moving upward on board
-				
-				for (var i = 1; i < yDif; i++){
-					if (!(boardy.grid[i + position.y][position.x] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-				return false;
-			} else {
-				//moving downward on board
-				yDif = -1 * yDif;
-				for (var i = 1; i < yDif; i++){
-					if (!(boardy.grid[position.y - i][position.x] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-				return false;
-			}
-		} else if (position.y === endPosition.y){
-		//horizontal movement
-			
-			var xDif = endPosition.x - position.x;
-			if (xDif > 0){
-				//moving right on board
-				
-				for (var i = 1; i < xDif; i++){
-					if(!(boardy.grid[position.y][i + position.x] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-				return false;
-			} else {
-				//moving left on board
-				xDif = -1 * xDif;
-				for (var i = 1; i < xDif; i++){
-					if (!(boardy.grid[position.y][position.x - i] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-				return false;
-			}
-		} else {
-			return false;
-		}
+		return rookMovement(position, endPosition, owner);
 	};
 }
 
+//rook movement factored out of Rook class so it can
+//be used both by Rook and by Queen
+function rookMovement(position, endPosition, owner){
+	if (position.x === endPosition.x){
+		//vertical movement
+	
+		var yDif = endPosition.y - position.y;
+		if (yDif > 0){
+			//moving upward on board
+			
+			for (var i = 1; i < yDif; i++){
+				if (!(boardy.grid[i + position.y][position.x] instanceof Empty)){
+					return false;
+				}
+			}
+			if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+				return true;
+			}
+			return false;
+		} else {
+			//moving downward on board
+			yDif = -1 * yDif;
+			for (var i = 1; i < yDif; i++){
+				if (!(boardy.grid[position.y - i][position.x] instanceof Empty)){
+					return false;
+				}
+			}
+			if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+				return true;
+			}
+			return false;
+		}
+	} else if (position.y === endPosition.y){
+	//horizontal movement
+		
+		var xDif = endPosition.x - position.x;
+		if (xDif > 0){
+			//moving right on board
+			
+			for (var i = 1; i < xDif; i++){
+				if(!(boardy.grid[position.y][i + position.x] instanceof Empty)){
+					return false;
+				}
+			}
+			if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+				return true;
+			}
+			return false;
+		} else {
+			//moving left on board
+			xDif = -1 * xDif;
+			for (var i = 1; i < xDif; i++){
+				if (!(boardy.grid[position.y][position.x - i] instanceof Empty)){
+					return false;
+				}
+			}
+			if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+				return true;
+			}
+			return false;
+		}
+	} else {
+		return false;
+	}
+}
+
+//Horse constructor. Horse instead of Knight because K was
+//taken by the King
 function Horse(owner, position){
 	this.owner = owner;
 	this.position = position;
@@ -756,190 +752,86 @@ function Horse(owner, position){
 	};
 }
 
+//Bishop constructor
 function Bishop(owner, position){
 	this.owner = owner;
 	this.position = position;
 	this.validMove = function(endPosition){
-		var yDif = endPosition.y - position.y;
-		var xDif = endPosition.x - position.x;
-		if (yDif > 0 && xDif > 0 && xDif === yDif){
-			//up-right movement
-			for (var i = 1; i < yDif; i++){
-				if (!(boardy.grid[position.y + i][position.x + i] instanceof Empty)){
-					return false;
-				}
-			}
-			if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-			return false;
-			
-		} else if (yDif > 0 && xDif < 0 && xDif * -1 === yDif){
-			//up-left movement
-			
-			for (var i = 1; i < yDif; i++){
-				if (!(boardy.grid[position.y + i][position.x - i] instanceof Empty)){
-					return false;
-				}
-			}
-			if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-			return false;
-			
-		} else if (yDif < 0 && xDif < 0 && xDif === yDif){
-			//down-left movement
-			
-			for (var i = 1; i < yDif * -1; i++){
-				if (!(boardy.grid[position.y - i][position.x - i] instanceof Empty)){
-					return false;
-				}
-			}
-			if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-			return false;
-			
-		} else if (yDif < 0 && xDif > 0 && xDif === yDif * -1){
-			//down-right movement
-			
-			for (var i = 1; i < xDif; i++){
-				if (!(boardy.grid[position.y - i][position.x + i] instanceof Empty)){
-					return false;
-				}
-			}
-			if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-			return false;
-		} else {
-			return false;
-		}
+		return bishopMovement(position, endPosition, owner);
 	};
 }
 
+//bishop movement factored out of Bishop class so it can
+//be used both by Bishop and by Queen
+function bishopMovement(position, endPosition, owner){
+	var yDif = endPosition.y - position.y;
+	var xDif = endPosition.x - position.x;
+	if (yDif > 0 && xDif > 0 && xDif === yDif){
+		//up-right movement
+		for (var i = 1; i < yDif; i++){
+			if (!(boardy.grid[position.y + i][position.x + i] instanceof Empty)){
+				return false;
+			}
+		}
+		if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+				return true;
+			}
+		return false;
+		
+	} else if (yDif > 0 && xDif < 0 && xDif * -1 === yDif){
+		//up-left movement
+		
+		for (var i = 1; i < yDif; i++){
+			if (!(boardy.grid[position.y + i][position.x - i] instanceof Empty)){
+				return false;
+			}
+		}
+		if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+				return true;
+			}
+		return false;
+		
+	} else if (yDif < 0 && xDif < 0 && xDif === yDif){
+		//down-left movement
+		
+		for (var i = 1; i < yDif * -1; i++){
+			if (!(boardy.grid[position.y - i][position.x - i] instanceof Empty)){
+				return false;
+			}
+		}
+		if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+				return true;
+			}
+		return false;
+		
+	} else if (yDif < 0 && xDif > 0 && xDif === yDif * -1){
+		//down-right movement
+		
+		for (var i = 1; i < xDif; i++){
+			if (!(boardy.grid[position.y - i][position.x + i] instanceof Empty)){
+				return false;
+			}
+		}
+		if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
+				return true;
+			}
+		return false;
+	} else {
+		return false;
+	}
+}
+
+//Queen constructor
 function Queen(owner, position){
 	this.owner = owner;
 	this.position = position;
 	this.validMove = function(endPosition){
-		if (position.x === endPosition.x){
-		//vertical movement
-		
-			var yDif = endPosition.y - position.y;
-			if (yDif > 0){
-				//moving upward on board
-				
-				for (var i = 1; i < yDif; i++){
-					if (!(boardy.grid[i + position.y][position.x] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-				return false;
-			} else {
-				//moving downward on board
-				yDif = -1 * yDif;
-				for (var i = 1; i < yDif; i++){
-					if (!(boardy.grid[position.y - i][position.x] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-				return false;
-			}
-		} else if (position.y === endPosition.y){
-		//horizontal movement
-			
-			var xDif = endPosition.x - position.x;
-			if (xDif > 0){
-				//moving right on board
-				
-				for (var i = 1; i < xDif; i++){
-					if(!(boardy.grid[position.y][i + position.x] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-				return false;
-			} else {
-				//moving left on board
-				xDif = -1 * xDif;
-				for (var i = 1; i < xDif; i++){
-					if (!(boardy.grid[position.y][position.x - i] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-					return true;
-				}
-				return false;
-			}
-		} else {
-			var yDif = endPosition.y - position.y;
-			var xDif = endPosition.x - position.x;
-			if (yDif > 0 && xDif > 0 && xDif === yDif){
-				//up-right movement
-				for (var i = 1; i < yDif; i++){
-					if (!(boardy.grid[position.y + i][position.x + i] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-						return true;
-					}
-				return false;
-				
-			} else if (yDif > 0 && xDif < 0 && xDif * -1 === yDif){
-				//up-left movement
-				
-				for (var i = 1; i < yDif; i++){
-					if (!(boardy.grid[position.y + i][position.x - i] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-						return true;
-					}
-				return false;
-				
-			} else if (yDif < 0 && xDif < 0 && xDif === yDif){
-				//down-left movement
-				
-				for (var i = 1; i < yDif * -1; i++){
-					if (!(boardy.grid[position.y - i][position.x - i] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-						return true;
-					}
-				return false;
-				
-			} else if (yDif < 0 && xDif > 0 && xDif === yDif * -1){
-				//down-right movement
-				
-				for (var i = 1; i < xDif; i++){
-					if (!(boardy.grid[position.y - i][position.x + i] instanceof Empty)){
-						return false;
-					}
-				}
-				if (boardy.grid[endPosition.y][endPosition.x].owner !== owner){
-						return true;
-					}
-				return false;
-			} else {
-				return false;
-			}
-		}
+		return (bishopMovement(position, endPosition, owner) || 
+				rookMovement(position, endPosition, owner));
 	};
 }
 
+//King constructor
 function King(owner, position){
 	this.owner = owner;
 	this.position = position;
@@ -1011,6 +903,7 @@ function King(owner, position){
 	};
 }
 
+//Pawn constructor
 function Pawn(owner, position){
 	this.owner = owner;
 	this.position = position;
@@ -1089,6 +982,8 @@ function Pawn(owner, position){
 	};
 }
 
+//Empty constructor. Empty objects are placed everywhere
+//on the board where there isn't a piece
 function Empty(owner, position){
 	this.owner = owner;
 	this.position = position;
