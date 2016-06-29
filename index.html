@@ -2,30 +2,27 @@
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" href="main.css">
+	<link href="https://fonts.googleapis.com/css?family=Merriweather" rel="stylesheet"> 
 </head>
 <body>
 
 	<center>
-	<font face="Courier New, serif" size="6">
+	<font face="Merriweather, serif" size="6">
 	<form id="moveInput">
-	Move: <input name="name" type="text" size="20" onkeypress="handleMoveInput(event)">
+	Move: <input name="name" type="text" size="25" onkeypress="handleMoveInput(event)">
 	</form>
 	</font>
 	</center>
 	
 	<p id="info1"><br></p>
-	<p id="info2">Lowercase's move</p>
+	<p id="info2">White's move</p>
 	<p><br></p>
-	<p id="8"></p>
-	<p id="7"></p>
-	<p id="6"></p>
-	<p id="5"></p>
-	<p id="4"></p>
-	<p id="3"></p>
-	<p id="2"></p>
-	<p id="1"></p>
-	<p id="b"></p>
-	<p id="b2"></p>
+	<div class="odc" id="outerDisplay">	
+		<div class="idc" id="innerDisplay"></div>
+	</div>
+	<div id="bot">
+		<p id="b"></p>
+	</div>
 
 <script>
 var boardy = new Board();
@@ -98,9 +95,9 @@ function updateInfo2Display(){
 	if (promotingPawn && stillGoing){
 		document.getElementById("info2").innerHTML="Choose piece";
 	} else if ((boardy.turn === "white") && stillGoing){
-		document.getElementById("info2").innerHTML="Lowercase's move";
+		document.getElementById("info2").innerHTML="White's move";
 	} else if (stillGoing){
-		document.getElementById("info2").innerHTML="Uppercase's move";
+		document.getElementById("info2").innerHTML="Black's move";
 	}
 }
 
@@ -140,20 +137,20 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 function checkEndGameConditions(){
 	if (checkMate(boardy.turn)){
 		stillGoing = false;
-		document.getElementById("b2").innerHTML="CHECKMATE!";
+		document.getElementById("b").innerHTML="CHECKMATE!";
 		if (boardy.turn === "white"){
-			document.getElementById("info2").innerHTML = "Uppercase wins!";
+			document.getElementById("info2").innerHTML = "Black wins!";
 		} else {
-			document.getElementById("info2").innerHTML = "Lowercase wins!";
+			document.getElementById("info2").innerHTML = "White wins!";
 		}
 	} else if (draw(boardy.turn)){
 		stillGoing = false;
-		document.getElementById("b2").innerHTML="";
+		document.getElementById("b").innerHTML="";
 		document.getElementById("info2").innerHTML = "It's a draw!";
 	} else if (playerInCheck(boardy.turn)){
-		document.getElementById("b2").innerHTML="CHECK!";		
+		document.getElementById("b").innerHTML="CHECK!";		
 	} else {
-		document.getElementById("b2").innerHTML="";
+		document.getElementById("b").innerHTML="";
 	}
 }
 
@@ -559,20 +556,20 @@ function getCoordsFromInput(stringInput){
 
 //prints the given board
 function printBoard(board){
+	document.getElementById("innerDisplay").innerHTML = '<img src="pics/chessboard.png" style="margin-left: -320px"/>';
 	for (var i = 8; i > 0; i--){
-		document.getElementById(i).innerHTML = getBoardRow(board, i);
+		for (var j = 1; j < 9; j++){
+			if (board.grid[i][j].owner !== "empty"){
+				var leftShift = -320 + j*64;
+				leftShift = '' + leftShift + 'px;';
+				var downShift = -64*i+512;
+				downShift = '' + downShift + 'px;';
+				document.getElementById("innerDisplay").innerHTML += 
+					'<img src='+ getPicDisplay(board.grid[i][j]) + 
+					' style="margin-left: ' + leftShift +  ' margin-top: ' + downShift + '"/>';
+			}
+		}
 	}
-	document.getElementById("b").innerHTML = "<b>" + board.grid[0] + "</b>";
-}
-
-//returns a row of a board as a string
-function getBoardRow(board, row){
-	var ret = "<b>" + row + "</b>";
-	for (var i = 1; i < 9; i++){
-		ret += " ";
-		ret += getDisplay(board.grid[row][i]);
-	}
-	return ret;
 }
 
 //Creates a new board, initialized with pieces in starting positions
@@ -620,29 +617,11 @@ function fillRowWithPieces(owner, row, board){
 	board.grid[row][8] = new Rook(owner, new Position(row, 8));
 }
 
-//Takes in a piece object and returns how that piece should be displayed as a string
-function getDisplay(piece){
-	var ret;
-	if (piece instanceof Empty){
-		ret = "-";
-	} else if (piece instanceof Rook){
-		ret = "r";
-	} else if (piece instanceof Horse){
-		ret = "h";
-	} else if (piece instanceof Bishop){
-		ret = "b";
-	} else if (piece instanceof Queen){
-		ret = "q";
-	} else if (piece instanceof King){
-		ret = "k";
-	} else if (piece instanceof Pawn){
-		ret = "p";
-	} else {
-		ret = "v"; //indicating an error
-	}
-	if (piece.owner === "black"){
-		ret = ret.toUpperCase();
-	}
+//Takes in a piece object and returns the filepath of the image that should be displayed
+function getPicDisplay(piece){
+	var ret = '"pics/' + piece.owner;
+	ret += piece.constructor.name.toLowerCase();
+	ret += '.png"';
 	return ret;
 }
 
@@ -729,7 +708,7 @@ function rookMovement(position, endPosition, owner){
 }
 
 //Horse constructor. Horse instead of Knight because K was
-//taken by the King
+//taken by the King when an ascii display was in use
 function Horse(owner, position){
 	this.owner = owner;
 	this.position = position;

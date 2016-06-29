@@ -1,7 +1,24 @@
 p{
-	font-family: 'Courier New', serif;
-	font-size: 200%;
-	line-height:0px;
-	margin-bottom: 46px;
+	font-family: 'Merriweather', serif;;
+	font-size: 180%;
+	line-height:10px;
+	margin-bottom: 0px;
 	text-align: center;
+}
+.odc {
+    width: 25px;
+    margin: auto;
+    overflow: visible;
+}
+.idc img {
+	display: block;
+	position: absolute;
+}
+.idc {
+    margin-left: 20px;
+    width: 100px;
+}
+#bot {
+	position: relative;
+	margin-top: 585px;
 }
