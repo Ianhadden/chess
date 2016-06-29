@@ -9,7 +9,7 @@
 	<center>
 	<font face="Merriweather, serif" size="6">
 	<form id="moveInput">
-	Move: <input name="name" type="text" size="25" onkeypress="handleMoveInput(event)">
+	Move: <input name="name" type="text" size="25" onkeypress="handleMoveInput(event)" spellcheck="false">
 	</form>
 	</font>
 	</center>
@@ -462,7 +462,7 @@ function getTarget(startPosition, endPosition){
 function pawnPromotion(endPosition){
 	if ((endPosition.y === 1 || endPosition.y === 8) && boardy.grid[endPosition.y][endPosition.x] instanceof Pawn){
 		document.getElementById("moveInput").innerHTML =
-		'Piece: <input name="name" type="text" size="20" onkeypress="handlePawnPromotionInput(event)">';
+		'Piece: <input name="name" type="text" size="20" onkeypress="handlePawnPromotionInput(event)" spellcheck="false">';
 		document.getElementById("moveInput").name.focus();
 		pawnPosition = endPosition;
 		promotingPawn = true;
@@ -500,7 +500,7 @@ function getPawnPromotionInput(){
 				boardy.grid[pawnPosition.y][pawnPosition.x] = new Horse(pawn.owner, pawn.position);	
 			}
 			document.getElementById("moveInput").innerHTML =
-				'Move: <input name="name" type="text" size="20" onkeypress="handleMoveInput(event)">';
+				'Move: <input name="name" type="text" size="20" onkeypress="handleMoveInput(event)" spellcheck="false">';
 			document.getElementById("moveInput").name.focus();
 			printBoard(boardy);
 			document.getElementById("info1").innerHTML="Last move was " + savedMoveText;
@@ -562,7 +562,7 @@ function printBoard(board){
 			if (board.grid[i][j].owner !== "empty"){
 				var leftShift = -320 + j*64;
 				leftShift = '' + leftShift + 'px;';
-				var downShift = -64*i+512;
+				var downShift = -64*i + 512;
 				downShift = '' + downShift + 'px;';
 				document.getElementById("innerDisplay").innerHTML += 
 					'<img src='+ getPicDisplay(board.grid[i][j]) + 
@@ -570,6 +570,11 @@ function printBoard(board){
 			}
 		}
 	}
+}
+
+//Takes in a piece object and returns the filepath of the image that should be displayed
+function getPicDisplay(piece){
+	return '"pics/' + piece.owner + piece.constructor.name.toLowerCase() + '.png"';
 }
 
 //Creates a new board, initialized with pieces in starting positions
@@ -615,14 +620,6 @@ function fillRowWithPieces(owner, row, board){
 	board.grid[row][6] = new Bishop(owner, new Position(row, 6));
 	board.grid[row][7] = new Horse(owner, new Position(row, 7));
 	board.grid[row][8] = new Rook(owner, new Position(row, 8));
-}
-
-//Takes in a piece object and returns the filepath of the image that should be displayed
-function getPicDisplay(piece){
-	var ret = '"pics/' + piece.owner;
-	ret += piece.constructor.name.toLowerCase();
-	ret += '.png"';
-	return ret;
 }
 
 //Creates a position pair. Notice the unusual ordering (y, x)
