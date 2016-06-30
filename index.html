@@ -9,7 +9,7 @@
 	<center>
 	<font face="Merriweather, serif" size="6">
 	<form id="moveInput">
-	Move: <input name="name" type="text" size="25" onkeypress="handleMoveInput(event)" spellcheck="false">
+	Move: <input name="name" type="text" size="25" onkeypress="handleMoveInput(event)" spellcheck="false" autocomplete="off">
 	</form>
 	</font>
 	</center>
@@ -462,7 +462,7 @@ function getTarget(startPosition, endPosition){
 function pawnPromotion(endPosition){
 	if ((endPosition.y === 1 || endPosition.y === 8) && boardy.grid[endPosition.y][endPosition.x] instanceof Pawn){
 		document.getElementById("moveInput").innerHTML =
-		'Piece: <input name="name" type="text" size="20" onkeypress="handlePawnPromotionInput(event)" spellcheck="false">';
+		'Piece: <input name="name" type="text" size="20" onkeypress="handlePawnPromotionInput(event)" spellcheck="false" autocomplete="off">';
 		document.getElementById("moveInput").name.focus();
 		pawnPosition = endPosition;
 		promotingPawn = true;
@@ -500,7 +500,7 @@ function getPawnPromotionInput(){
 				boardy.grid[pawnPosition.y][pawnPosition.x] = new Horse(pawn.owner, pawn.position);	
 			}
 			document.getElementById("moveInput").innerHTML =
-				'Move: <input name="name" type="text" size="20" onkeypress="handleMoveInput(event)" spellcheck="false">';
+				'Move: <input name="name" type="text" size="20" onkeypress="handleMoveInput(event)" spellcheck="false" autocomplete="off">';
 			document.getElementById("moveInput").name.focus();
 			printBoard(boardy);
 			document.getElementById("info1").innerHTML="Last move was " + savedMoveText;
