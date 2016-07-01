@@ -162,7 +162,13 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 
 //Checks for checkmates, stalemates, and checks. Updates things appropriately
 function checkEndGameConditions(){
+	if (playerInCheck(boardy.turn)){
+		boardy.check = true;
+	} else {
+		boardy.check = false;
+	}
 	if (checkMate(boardy.turn)){
+		boardy.check = true;
 		stillGoing = false;
 		document.getElementById("b").innerHTML="CHECKMATE!";
 		if (boardy.turn === "white"){
@@ -171,11 +177,10 @@ function checkEndGameConditions(){
 			document.getElementById("info2").innerHTML = "White wins!";
 		}
 	} else if (draw(boardy.turn)){
-		stillGoing = false;
 		document.getElementById("b").innerHTML="";
 		document.getElementById("info2").innerHTML = "It's a draw!";
 	} else if (playerInCheck(boardy.turn)){
-		document.getElementById("b").innerHTML="CHECK!";		
+		document.getElementById("b").innerHTML="CHECK!";
 	} else {
 		document.getElementById("b").innerHTML="";
 	}
@@ -570,37 +575,69 @@ function getCoordsFromInput(stringInput){
 
 //prints the given board
 function printBoard(board){
+	var kingPos;
+	if (boardy.turn === "white"){
+		kingPos = wkPosition;
+	} else {
+		kingPos = bkPosition;
+	}
 	if (!board.rotated){ //normal board
-		document.getElementById("innerDisplay").innerHTML = '<img src="pics/chessboard.png" style="margin-left: -320px"/>';
-		for (var i = 8; i > 0; i--){
-			for (var j = 1; j < 9; j++){
-				if (board.grid[i][j].owner !== "empty"){
-					var leftShift = -320 + j*64;
-					leftShift = '' + leftShift + 'px;';
-					var downShift = -64*i + 512;
-					downShift = '' + downShift + 'px;';
-					document.getElementById("innerDisplay").innerHTML += 
-						'<img src='+ getPicDisplay(board.grid[i][j]) + 
-						' style="margin-left: ' + leftShift +  ' margin-top: ' + downShift + '"/>';
-				}
-			}
-		}
+		printNonRotatedBoard(board, kingPos);
 	} else { //rotated board
-		document.getElementById("innerDisplay").innerHTML = '<img src="pics/chessboardrotated.png" style="margin-left: -320px"/>';
-		for (var i = 8; i > 0; i--){
-			for (var j = 1; j < 9; j++){
-				if (board.grid[i][j].owner !== "empty"){
-					var leftShift = 256 - j*64;
-					leftShift = '' + leftShift + 'px;';
-					var downShift = 64*i - 64;
-					downShift = '' + downShift + 'px;';
-					document.getElementById("innerDisplay").innerHTML += 
-						'<img src='+ getPicDisplay(board.grid[i][j]) + 
-						' style="margin-left: ' + leftShift +  ' margin-top: ' + downShift + '"/>';
-				}
+		printRotatedBoard(board, kingPos);
+	}
+}
+
+//prints the non rotated board
+function printNonRotatedBoard(board, kingPos){
+	document.getElementById("innerDisplay").innerHTML = '<img src="pics/chessboard.png" style="margin-left: -320px"/>';
+	if (boardy.check){
+		document.getElementById("innerDisplay").innerHTML += 
+		'<img src="pics/checkindicator.png" ' + formatStyleForNonRotatedPosition(kingPos);
+	}
+	for (var i = 8; i > 0; i--){
+		for (var j = 1; j < 9; j++){
+			if (board.grid[i][j].owner !== "empty"){
+				document.getElementById("innerDisplay").innerHTML += 
+					'<img src='+ getPicDisplay(board.grid[i][j]) + formatStyleForNonRotatedPosition(board.grid[i][j].position);
 			}
 		}
 	}
+}
+
+//formats html style tags for displaying a piece
+function formatStyleForNonRotatedPosition(position){
+	var leftShift = -320 + position.x * 64;
+	leftShift = '' + leftShift + 'px;';
+	var downShift = -64 * position.y + 512;
+	downShift = '' + downShift + 'px;';
+	return ' style="margin-left: ' + leftShift +  ' margin-top: ' + downShift + '"/>';
+}
+
+//prints the rotated board
+function printRotatedBoard(board, kingPos){
+	document.getElementById("innerDisplay").innerHTML = '<img src="pics/chessboardrotated.png" style="margin-left: -320px"/>';
+	if (boardy.check){
+		document.getElementById("innerDisplay").innerHTML += 
+		'<img src="pics/checkindicator.png" ' + formatStyleForRotatedPosition(kingPos);
+	}
+	for (var i = 8; i > 0; i--){
+		for (var j = 1; j < 9; j++){
+			if (board.grid[i][j].owner !== "empty"){
+				document.getElementById("innerDisplay").innerHTML += 
+					'<img src='+ getPicDisplay(board.grid[i][j]) + formatStyleForRotatedPosition(board.grid[i][j].position);
+			}
+		}
+	}
+}
+
+//formats html style tags for displaying a rotated piece
+function formatStyleForRotatedPosition(position){
+	var leftShift = 256 - position.x * 64;
+	leftShift = '' + leftShift + 'px;';
+	var downShift = 64 * position.y - 64;
+	downShift = '' + downShift + 'px;';
+	return ' style="margin-left: ' + leftShift +  ' margin-top: ' + downShift + '"/>';
 }
 
 //Takes in a piece object and returns the filepath of the image that should be displayed
@@ -613,6 +650,7 @@ function Board(){
 	this.turn = "white";
 	this.rotated = false;
 	this.autoRotate = false;
+	this.check = false //true if current turn's player is in check
 	this.grid = new Array();
 	this.grid[0] = "0 a b c d e f g h";
 	for (var i = 1; i < 9; i++){
