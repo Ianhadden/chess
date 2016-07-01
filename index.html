@@ -9,7 +9,7 @@
 	<center>
 	<font face="Merriweather, serif" size="6">
 	<form id="moveInput">
-	Move: <input name="name" type="text" size="25" onkeypress="handleMoveInput(event)" spellcheck="false" autocomplete="off">
+	Move: <input name="name" type="text" size="25" onkeypress="handleInput(event)" spellcheck="false" autocomplete="off">
 	</form>
 	</font>
 	</center>
@@ -43,35 +43,51 @@ var savedMoveText;
 
 var stillGoing = true;
 
-
-// Triggered on key press. Calls getMoveInput() if enter was pressed
-function handleMoveInput(e){
-	if(e.keyCode === 13){
-		getMoveInput();
+// Triggered on key press. Checks text box for rotation input,
+// movement input, and pawn promotion input (if applicable)
+function handleInput(e){
+	if(e.keyCode === 13){ // on enter
+		var form = document.getElementById("moveInput");
+		var text = form.elements["name"].value.toLowerCase();
+		rotating = getRotationInput(text, form);
+		if (!rotating){
+			if (promotingPawn){
+				getPawnPromotionInput(text, form);
+			} else {
+				getMoveInput(text, form);
+			}
+		}
 		e.preventDefault();
 	}
 	return false;
 }
 
+// Attempts to parse the text as a rotation command. Returns true if it was
+// accepted as a rotation command, false otherwise
+function getRotationInput(text, form){
+	if (text === "ro" || text === "rotate"){
+		boardy.rotated = !boardy.rotated;
+		form.elements["name"].value = "";
+		printBoard(boardy);
+		return true;
+	} else if (text === "ar" || text === "auto-rotate"){
+		boardy.autoRotate = !boardy.autoRotate;
+		form.elements["name"].value = "";
+		return true;
+	} else {
+		document.getElementById("info1").innerHTML="Invalid command";
+		return false;
+	}
+}
+
 // Reads input from the textbox and parses it. Checks if that move is
 // valid based on board positions and the indicated piece. If not valid,
 // that is displayed. If valid, control is passed to ValidMoveProcedure()
-function getMoveInput(){
+function getMoveInput(moveText, moveForm){
 	if (stillGoing){
-		var moveForm = document.getElementById("moveInput");
-		var moveText = moveForm.elements["name"].value.toLowerCase();
 		//check for correct string format
 		if (moveText.length !== 5|| moveText.substring(2, 3) !== " "){
-			if (moveText === "ro" || moveText === "rotate"){
-				boardy.rotated = !boardy.rotated;
-				moveForm.elements["name"].value = "";
-				printBoard(boardy);
-			} else if (moveText === "ar" || moveText === "auto-rotate"){
-				boardy.autoRotate = !boardy.autoRotate;
-				moveForm.elements["name"].value = "";
-			} else {
-				document.getElementById("info1").innerHTML="Invalid command";
-			}
+			document.getElementById("info1").innerHTML="Invalid command";
 		} else {
 			//parse for start and end positions, check if they are valid
 			var startPosition = getCoordsFromInput(moveText.substring(0,2));
@@ -113,14 +129,13 @@ function updateInfo2Display(){
 	}
 }
 
-//Applies a move (with the precondition that that move is valid). Once applied,
+//Goes through the procedure of applying a valid move to the board. Once applied,
 //checks if that move put the moving player in check. Undoes it if that is the case.
 //Otherwise, checks if it put the other player in check, if it caused a checkmate,
 //stalemate, etc.
 function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 	var piece = boardy.grid[startPosition.y][startPosition.x];
 	var target = getTarget(startPosition, endPosition);
-	//var target = boardy.grid[endPosition.y][endPosition.x];
 	var playerMakingMove = boardy.turn;
 	
 	//apply move, see if put self in check
@@ -131,16 +146,16 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 		undoMove(startPosition, endPosition, target);
 		document.getElementById("info1").innerHTML="Invalid Move, put's you in check";
 	} else {
-		//otherwise, don't undo, update stuff accordingly.
-		//see if we put the other person in check
+		//otherwise, check if we're promoting a pawn, update stuff
 		pawnPromotion(endPosition);
 		if (promotingPawn){
 			document.getElementById("info1").innerHTML="<br>";
 			savedMoveText = moveText;
 		} else {
 			document.getElementById("info1").innerHTML="Last move was " + moveText;
-			moveForm.elements["name"].value = "";
 		}
+		moveForm.elements["name"].value = "";
+		//see if some endgame condition has been triggered
 		checkEndGameConditions();
 	}
 }
@@ -473,29 +488,15 @@ function getTarget(startPosition, endPosition){
 //Sets things up for pawn promotion input, if applicable
 function pawnPromotion(endPosition){
 	if ((endPosition.y === 1 || endPosition.y === 8) && boardy.grid[endPosition.y][endPosition.x] instanceof Pawn){
-		document.getElementById("moveInput").innerHTML =
-		'Piece: <input name="name" type="text" size="20" onkeypress="handlePawnPromotionInput(event)" spellcheck="false" autocomplete="off">';
-		document.getElementById("moveInput").name.focus();
 		pawnPosition = endPosition;
 		promotingPawn = true;
 	}
 	
 }
 
-// Triggered on key press. Calls getPawnPromotionInput() if enter was pressed
-function handlePawnPromotionInput(e){
-	if(e.keyCode === 13){
-		getPawnPromotionInput();
-		e.preventDefault();
-	}
-	return false;
-}
-
 //Parses input for pawn promotion. Promotes if input is valid
-function getPawnPromotionInput(){
+function getPawnPromotionInput(pawnText, pawnForm){
 	if (stillGoing){
-		var pawnForm = document.getElementById("moveInput");
-		var pawnText = pawnForm.elements["name"].value.toLowerCase();
 		if (pawnText === "q" || pawnText === "queen" ||
 			pawnText === "b" || pawnText === "bishop" ||
 			pawnText === "r" || pawnText === "rook" ||
@@ -511,24 +512,15 @@ function getPawnPromotionInput(){
 			} else if (pawnText === "h" || pawnText === "horse" || pawnText === "knight"){
 				boardy.grid[pawnPosition.y][pawnPosition.x] = new Horse(pawn.owner, pawn.position);	
 			}
-			document.getElementById("moveInput").innerHTML =
-				'Move: <input name="name" type="text" size="20" onkeypress="handleMoveInput(event)" spellcheck="false" autocomplete="off">';
-			document.getElementById("moveInput").name.focus();
 			if (boardy.autoRotate){
 				boardy.rotated = !boardy.rotated;
 			}
 			printBoard(boardy);
 			document.getElementById("info1").innerHTML="Last move was " + savedMoveText;
+			pawnForm.elements["name"].value = "";
 			promotingPawn = false;
 			checkEndGameConditions();
 			updateInfo2Display();
-		} else if (pawnText === "ro" || pawnText === "rotate"){
-			boardy.rotated = !boardy.rotated;
-			pawnForm.elements["name"].value = "";
-			printBoard(boardy);
-		} else if (pawnText === "ar" || pawnText === "auto-rotate"){
-			boardy.autoRotate = !boardy.autoRotate;
-			pawnForm.elements["name"].value = "";
 		} else {
 			document.getElementById("info1").innerHTML="Invalid piece";
 		}
