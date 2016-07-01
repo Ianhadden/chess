@@ -62,7 +62,16 @@ function getMoveInput(){
 		var moveText = moveForm.elements["name"].value.toLowerCase();
 		//check for correct string format
 		if (moveText.length !== 5|| moveText.substring(2, 3) !== " "){
-			document.getElementById("info1").innerHTML="Invalid command";
+			if (moveText === "ro" || moveText === "rotate"){
+				boardy.rotated = !boardy.rotated;
+				moveForm.elements["name"].value = "";
+				printBoard(boardy);
+			} else if (moveText === "ar" || moveText === "auto-rotate"){
+				boardy.autoRotate = !boardy.autoRotate;
+				moveForm.elements["name"].value = "";
+			} else {
+				document.getElementById("info1").innerHTML="Invalid command";
+			}
 		} else {
 			//parse for start and end positions, check if they are valid
 			var startPosition = getCoordsFromInput(moveText.substring(0,2));
@@ -78,6 +87,9 @@ function getMoveInput(){
 				
 					validMoveProcedure(startPosition, endPosition, moveForm, moveText);
 					
+					if (boardy.autoRotate && !promotingPawn){ // rotate if autorotate is on and we aren't
+						boardy.rotated = !boardy.rotated;	  // in the process of promoting a pawn
+					}
 					printBoard(boardy);
 					updateInfo2Display();
 					
@@ -502,13 +514,23 @@ function getPawnPromotionInput(){
 			document.getElementById("moveInput").innerHTML =
 				'Move: <input name="name" type="text" size="20" onkeypress="handleMoveInput(event)" spellcheck="false" autocomplete="off">';
 			document.getElementById("moveInput").name.focus();
+			if (boardy.autoRotate){
+				boardy.rotated = !boardy.rotated;
+			}
 			printBoard(boardy);
 			document.getElementById("info1").innerHTML="Last move was " + savedMoveText;
 			promotingPawn = false;
 			checkEndGameConditions();
 			updateInfo2Display();
+		} else if (pawnText === "ro" || pawnText === "rotate"){
+			boardy.rotated = !boardy.rotated;
+			pawnForm.elements["name"].value = "";
+			printBoard(boardy);
+		} else if (pawnText === "ar" || pawnText === "auto-rotate"){
+			boardy.autoRotate = !boardy.autoRotate;
+			pawnForm.elements["name"].value = "";
 		} else {
-			document.getElementById("info1").innerHTML = "Invalid Piece";
+			document.getElementById("info1").innerHTML="Invalid piece";
 		}
 	}
 }
@@ -556,17 +578,34 @@ function getCoordsFromInput(stringInput){
 
 //prints the given board
 function printBoard(board){
-	document.getElementById("innerDisplay").innerHTML = '<img src="pics/chessboard.png" style="margin-left: -320px"/>';
-	for (var i = 8; i > 0; i--){
-		for (var j = 1; j < 9; j++){
-			if (board.grid[i][j].owner !== "empty"){
-				var leftShift = -320 + j*64;
-				leftShift = '' + leftShift + 'px;';
-				var downShift = -64*i + 512;
-				downShift = '' + downShift + 'px;';
-				document.getElementById("innerDisplay").innerHTML += 
-					'<img src='+ getPicDisplay(board.grid[i][j]) + 
-					' style="margin-left: ' + leftShift +  ' margin-top: ' + downShift + '"/>';
+	if (!board.rotated){ //normal board
+		document.getElementById("innerDisplay").innerHTML = '<img src="pics/chessboard.png" style="margin-left: -320px"/>';
+		for (var i = 8; i > 0; i--){
+			for (var j = 1; j < 9; j++){
+				if (board.grid[i][j].owner !== "empty"){
+					var leftShift = -320 + j*64;
+					leftShift = '' + leftShift + 'px;';
+					var downShift = -64*i + 512;
+					downShift = '' + downShift + 'px;';
+					document.getElementById("innerDisplay").innerHTML += 
+						'<img src='+ getPicDisplay(board.grid[i][j]) + 
+						' style="margin-left: ' + leftShift +  ' margin-top: ' + downShift + '"/>';
+				}
+			}
+		}
+	} else { //rotated board
+		document.getElementById("innerDisplay").innerHTML = '<img src="pics/chessboardrotated.png" style="margin-left: -320px"/>';
+		for (var i = 8; i > 0; i--){
+			for (var j = 1; j < 9; j++){
+				if (board.grid[i][j].owner !== "empty"){
+					var leftShift = 256 - j*64;
+					leftShift = '' + leftShift + 'px;';
+					var downShift = 64*i - 64;
+					downShift = '' + downShift + 'px;';
+					document.getElementById("innerDisplay").innerHTML += 
+						'<img src='+ getPicDisplay(board.grid[i][j]) + 
+						' style="margin-left: ' + leftShift +  ' margin-top: ' + downShift + '"/>';
+				}
 			}
 		}
 	}
@@ -580,6 +619,8 @@ function getPicDisplay(piece){
 //Creates a new board, initialized with pieces in starting positions
 function Board(){
 	this.turn = "white";
+	this.rotated = false;
+	this.autoRotate = false;
 	this.grid = new Array();
 	this.grid[0] = "0 a b c d e f g h";
 	for (var i = 1; i < 9; i++){
