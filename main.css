@@ -26,3 +26,15 @@ input {
 	position: relative;
 	margin-top: 585px;
 }
+.button {
+	background-color: #008CBA;
+	border: none;
+	color: white;
+	padding: 1px 6px;
+	display: inline-block;
+	font-size: 18px;
+	cursor: pointer;
+	position: relative;
+	top: -4px;
+	border-radius: 4px;
+}

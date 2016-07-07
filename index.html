@@ -10,6 +10,7 @@
 	<font face="Merriweather, serif" size="6">
 	<form id="moveInput">
 	Move: <input name="name" type="text" size="25" onkeypress="handleInput(event)" spellcheck="false" autocomplete="off">
+	<button class="button" onclick="return giveInfo1()">?</button>
 	</form>
 	</font>
 	</center>
@@ -113,7 +114,7 @@ function getMoveInput(moveText, moveForm){
 					updateInfo2Display();
 					
 				} else {
-					document.getElementById("info1").innerHTML="Invalid Move";
+					document.getElementById("info1").innerHTML="Invalid move";
 				}
 			}
 		}
@@ -132,6 +133,27 @@ function updateInfo2Display(){
 	}
 }
 
+//Gives info on how to input commands related to moves and rotation
+function giveInfo1(){
+	alert('Input move commands by typing the starting and ending coordinates of your move. ' +
+	'For instance "a2 a4" would move white\'s pawn from position a2 to a4. ' +
+	'Typing "rotate" or "ro" will rotate the board 180 degrees. Typing "auto-rotate" or ' +
+	'"ar" will toggle auto-rotation, which rotates the board at the end of each turn. ' +
+	'Auto-rotation is off by default.')
+	return false;
+}
+
+//Gives info on how to input commands related to pawn promotion and rotation
+function giveInfo2(){
+	alert('Input pawn promotion commands by typing the kind of piece you want to ' +
+	'upgrade to. For instance, typing "queen" will upgrade your pawn to a queen. You ' +
+	'can also just type the first letter of the piece you want (i.e. "r" would give you a rook). ' +
+	'Typing "rotate" or "ro" will rotate the board 180 degrees. Typing "auto-rotate" or ' +
+	'"ar" will toggle auto-rotation, which rotates the board at the end of each turn. ' +
+	'Auto-rotation is off by default.')
+	return false;
+}
+
 //Goes through the procedure of applying a valid move to the board. Once applied,
 //checks if that move put the moving player in check. Undoes it if that is the case.
 //Otherwise, checks if it put the other player in check, if it caused a checkmate,
@@ -147,7 +169,7 @@ function validMoveProcedure(startPosition, endPosition, moveForm, moveText){
 	if (putSelfInCheck){
 		//if put self in check, undo move
 		undoMove(startPosition, endPosition, target);
-		document.getElementById("info1").innerHTML="Invalid Move, put's you in check";
+		document.getElementById("info1").innerHTML="Invalid move, put's you in check";
 	} else {
 		//otherwise, check if we're promoting a pawn, update stuff
 		pawnPromotion(endPosition);
@@ -498,6 +520,9 @@ function pawnPromotion(endPosition){
 	if ((endPosition.y === 1 || endPosition.y === 8) && boardy.grid[endPosition.y][endPosition.x] instanceof Pawn){
 		pawnPosition = endPosition;
 		promotingPawn = true;
+		document.getElementById("moveInput").innerHTML='Piece: <input name="name" type="text" size="25"' +
+		' onkeypress="handleInput(event)" spellcheck="false" autocomplete="off">' +
+		' <button class="button" onclick="return giveInfo2()">?</button>';
 	}
 	
 }
@@ -526,6 +551,9 @@ function getPawnPromotionInput(pawnText, pawnForm){
 			printBoard(boardy);
 			document.getElementById("info1").innerHTML="Last move was " + savedMoveText;
 			pawnForm.elements["name"].value = "";
+			document.getElementById("moveInput").innerHTML='Move: <input name="name" type="text" ' +
+				'size="25" onkeypress="handleInput(event)" spellcheck="false" autocomplete="off">' +
+				' <button class="button" onclick="return giveInfo1()">?</button>';
 			promotingPawn = false;
 			checkEndGameConditions();
 			updateInfo2Display();
